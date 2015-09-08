@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>
+		Ben's Encryption
+		</title>
+	</head>
+
+	<body>
+	Codes
+	</body>
+</html>
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/dropbox.js/0.10.2/dropbox.min.js"></script>
+<script>
+	function getQueryParams(qs) {
+		qs = qs.split('+').join(' ');
+
+		var params = {},
+			tokens,
+			re = /[?&]?([^=]+)=([^&]*)/g;
+
+		while (tokens = re.exec(qs)) {
+			params[decodeURIComponent(tokens[1])] = decodeURIComponent(tokens[2]);
+		}
+
+		return params;
+	}
+
+	var client = new Dropbox.Client({ key: "q29ccmrl21l9e71" });
+	client.authDriver(new Dropbox.AuthDriver.Popup({
+		receiverUrl: "https://url.to/oauth_receiver.html"}));
+	
+	client.authenticate(function(error, client) {
+	  if (error) {
+		alert("Error!");
+	  }
+	  alert("Success!");
+	}
+});
+</script>
