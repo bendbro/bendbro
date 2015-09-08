@@ -13,6 +13,18 @@
 
 <script src="//cdnjs.cloudflare.com/ajax/libs/dropbox.js/0.10.2/dropbox.min.js"></script>
 <script>
+	var client = new Dropbox.Client({ key: "q29ccmrl21l9e71" });
+	client.authDriver(new Dropbox.AuthDriver.Popup({
+		receiverUrl: "https://url.to/oauth_receiver.html"}));
+	
+	alert("Authenticating.");
+	client.authenticate(function(error, client) {
+	  if (error) {
+		alert("Error!");
+	  }
+	  alert("Success!");
+	}
+	
 	function getQueryParams(qs) {
 		qs = qs.split('+').join(' ');
 
@@ -25,17 +37,6 @@
 		}
 
 		return params;
-	}
-
-	var client = new Dropbox.Client({ key: "q29ccmrl21l9e71" });
-	client.authDriver(new Dropbox.AuthDriver.Popup({
-		receiverUrl: "https://url.to/oauth_receiver.html"}));
-	
-	client.authenticate(function(error, client) {
-	  if (error) {
-		alert("Error!");
-	  }
-	  alert("Success!");
 	}
 });
 </script>
