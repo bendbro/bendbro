@@ -12,31 +12,25 @@
 </html>
 
 <script src="//cdnjs.cloudflare.com/ajax/libs/dropbox.js/0.10.2/dropbox.min.js"></script>
+<script src="https://bitwiseshiftleft.github.io/sjcl/sjcl.js"/>
 <script>
 	var client = new Dropbox.Client({ key: "q29ccmrl21l9e71" });
-	client.authDriver(new Dropbox.AuthDriver.Popup({
-		receiverUrl: "https://url.to/oauth_receiver.html"}));
-	
-	alert("Authenticating.");
 	client.authenticate(function(error, client) {
 	  if (error) {
-		alert("Error!");
-	  }
-	  alert("Success!");
-	}
+		alert("Failed to authenticate with dropbox");
+	  } else {
+		alert("Authenticated, encrypting data.");
+	  
+		var tm = "133713371337 This is a test! 133713371337";
+		var tme = sjcl.encrypt("testpass",tm);
+		var tmh = sjcl.hash.sha256.hash(tm);
+		
+		var file = {
+			message-encrypt : tme,
+			message-hash : tmh
+		};
 	
-	function getQueryParams(qs) {
-		qs = qs.split('+').join(' ');
-
-		var params = {},
-			tokens,
-			re = /[?&]?([^=]+)=([^&]*)/g;
-
-		while (tokens = re.exec(qs)) {
-			params[decodeURIComponent(tokens[1])] = decodeURIComponent(tokens[2]);
-		}
-
-		return params;
-	}
-});
+		alert(file);
+	  }
+	});
 </script>
