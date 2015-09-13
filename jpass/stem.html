@@ -11,7 +11,7 @@
 	</body>
 </html>
 
-<script src="//cdnjs.cloudflare.com/ajax/libs/dropbox.js/0.10.2/dropbox.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dropbox.js/0.10.2/dropbox.min.js"></script>
 <script src="https://bitwiseshiftleft.github.io/sjcl/sjcl.js"/>
 <script>
 	var client = new Dropbox.Client({ key: "q29ccmrl21l9e71" });
@@ -23,14 +23,32 @@
 	  
 		var tm = "133713371337 This is a test! 133713371337";
 		var tme = sjcl.encrypt("testpass",tm);
-		var tmh = sjcl.hash.sha256.hash(tm);
 		
-		var file = {
-			message-encrypt : tme,
-			message-hash : tmh
-		};
-	
-		alert(file);
+		alert(tme);
+		
+		client.writeFile("efile.txt",tme,function(error,stat)) {
+			if(error) {
+				return showError(error);
+			}
+
+			alert("File saved as revision " + stat.versionTag);
+
+			client.readFile("hello_world.txt", function(error, data) {
+				if (error) {
+					return showError(error);  // Something went wrong.
+				}
+				alert(data);  // data has the file's contents
+				alert(sjcl.decrypt("testpass",data));
+				
+				client.readdir("/", function(error, entries) {
+				  if (error) {
+					return showError(error);  // Something went wrong.
+				  }
+
+				  alert("Your Dropbox contains " + entries.join(", "));
+				});
+			});
+		}
 	  }
 	});
 </script>
