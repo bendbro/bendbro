@@ -26,7 +26,7 @@
 		
 		alert(tme);
 		
-		client.writeFile("efile.txt",tme,function(error,stat)) {
+		client.writeFile("efile.txt",tme,function(error,stat) {
 			if(error) {
 				return showError(error);
 			}
@@ -48,7 +48,7 @@
 				  alert("Your Dropbox contains " + entries.join(", "));
 				});
 			});
-		}
+		});
 	  }
 	});
 </script>
