@@ -12,7 +12,7 @@
 </html>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/dropbox.js/0.10.2/dropbox.min.js"></script>
-<script src="https://bitwiseshiftleft.github.io/sjcl/sjcl.js"/>
+<script src="https://bitwiseshiftleft.github.io/sjcl/sjcl.js"></script>
 <script>
 	var client = new Dropbox.Client({ key: "q29ccmrl21l9e71" });
 	client.authenticate(function(error, client) {
@@ -31,22 +31,12 @@
 				return showError(error);
 			}
 
-			alert("File saved as revision " + stat.versionTag);
-
-			client.readFile("hello_world.txt", function(error, data) {
+			client.readFile("efile.txt",function(error, data) {
 				if (error) {
 					return showError(error);  // Something went wrong.
 				}
 				alert(data);  // data has the file's contents
 				alert(sjcl.decrypt("testpass",data));
-				
-				client.readdir("/", function(error, entries) {
-				  if (error) {
-					return showError(error);  // Something went wrong.
-				  }
-
-				  alert("Your Dropbox contains " + entries.join(", "));
-				});
 			});
 		});
 	  }
