@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html>
-	<head><title>Title of the document</title></head>
+	<head><title>Dropbox password manager</title></head>
 	<body></body>
 </html>
 
@@ -32,22 +32,26 @@
 	function type(object) {
 		return Object.prototype.toString.call(object);
 	}
-
-	function Model() {
-		// Get data returns the data contained.
-		this.getData = function() {};
-		// Set data sets the data contained, without disruping the nested structure of Data objects.
-		this.setData = function(data) {};
-		// innerData returns the nested Data objects.
-		this.innerData = function() {};
-	}
 	
-	function PrimitiveObjectModel(property, containing) {
-		this.property = property;
-		this.containing = containing;
-		this.getData = function() {return this.containing[property]};
-		this.setData = function(data) {this.containing[property] = data;};
-		this.innerData = function() {return {};};
+	function PrimitiveObjectModel(targetProperty, containingObject) {
+		this.targetProperty = targetProperty;
+		this.containingObject = containingObject;
+		this.saved = true;
+		
+		this.getData = function() {
+			return this.containingObject[targetProperty]
+		};
+		
+		this.setData = function(data) {
+			if(data != this.containingObject[this.targetProperty]) {
+				this.saved = false;
+			}
+			this.containingObject[targetProperty] = data;
+		};
+		
+		this.innerData = function() {
+			return {};
+		};
 	}
 	
 	function JsObjectModel(bind) {
@@ -56,12 +60,13 @@
 
 		this.applyData = function(update) {
 			for(property in update) {
-				var object = update[property];
-				if(this.models[property] != null) {
-					this.models[property].setData(object);
+				var pprop = property;
+				var object = update[pprop];
+				if(this.models[pprop] != null) {
+					this.models[pprop].setData(object);
 				} else {
 					var model = null;
-					switch(type(update[property])) {
+					switch(type(object)) {
 						case "[object Object]":
 							model = new JsObjectModel(object);
 							break;
@@ -69,16 +74,16 @@
 							model = new JsObjectModel(object);
 							break;
 						case "[object String]":
-							model = new PrimitiveObjectModel(property,update);
+							model = new PrimitiveObjectModel(pprop,update);
 							break;
 						case "[object Number]":
-							model = new PrimitiveObjectModel(property,update);
+							model = new PrimitiveObjectModel(pprop,update);
 							break;
 						default:
-							model = new PrimitiveObjectModel(property,update);
+							model = new PrimitiveObjectModel(pprop,update);
 					}
-					this.bind[property] = object;
-					this.models[property] = model;
+					this.bind[pprop] = object;
+					this.models[pprop] = model;
 				}
 			}
 		};
@@ -90,7 +95,7 @@
 		};
 		
 		this.setData = function(update) {
-			applyData(update);
+			this.applyData(update);
 		};
 		
 		this.innerData = function() {
@@ -98,16 +103,10 @@
 		};
 	}
 	
-	function View() {
-		// Called whenever the state of the rendered object changes, passes this object.
-		this.onChange = function(data) {};
-		this.bind = function(data) {};
-		this.unbind = function(name) {};
-	}
-	
-	function ItemView(model) {
+	function ItemView(html, model) {
+		this.html = html;
 		this.model = model;
-		this.html = document.createElement("div");
+		
 		this.html.innerHTML = model.getData();
 		this.html.setAttribute("contenteditable", true);
 		var model = this.model;
@@ -125,64 +124,96 @@
 		});
 	}
 	
-	function RowView(model) {
+	function RowView(row, model) {
+		this.row = row;
 		this.model = model;
 		this.views = {};
-		this.html = document.createElement("tr");
 		
-		var innerData = this.model.innerData();
-		for(property in innerData) {
-			var name = document.createElement("div");
-			name.innerHTML = property;
-			
-			this.views[property] = new ItemView(innerData[property]);
-			var data = this.views[property].html;
-			
-			var cell = document.createElement("td");
-			cell.appendChild(name);
-			cell.appendChild(data);
-			
-			this.html.appendChild(cell);
-		}
+		this.update = function(model) {
+			var innerData = model.innerData();
+			for(rowViewProperty in innerData) {
+				if(this.views[rowViewProperty] == null) {
+					var rowElement = document.createElement("td");
+					var nameDiv = document.createElement("div");
+					nameDiv.innerHTML = rowViewProperty;
+					var valueDiv = document.createElement("div");
+					rowElement.appendChild(nameDiv);
+					rowElement.appendChild(valueDiv);
+					this.row.appendChild(rowElement);
+					this.views[rowViewProperty] = new ItemView(valueDiv, innerData[rowViewProperty]);
+				}
+			}
+		};
+		
+		this.update(this.model);
 	}
 	
-	function TableView(model) {
+	function TableView(table, model) {
+		this.table = table;
 		this.model = model;
-		this.html = document.createElement("table");
-		this.html.setAttribute("class","table table-striped");
 		this.views = {};
 		
-		var innerData = this.model.innerData();
-		for(property in innerData) {
-			this.views[property] = new RowView(innerData[property]);
-			var row = this.views[property].html;
-			this.html.appendChild(row);
-		}
+		this.update = function(model) {
+			var innerData = model.innerData();
+			for(tableViewProperty in innerData) {
+				if(this.views[tableViewProperty] == null) {
+					var row = document.createElement("tr");
+					table.appendChild(row);
+					this.views[tableViewProperty] = new RowView(row, innerData[tableViewProperty]);
+				}
+				this.views[tableViewProperty].update(innerData[tableViewProperty]);
+			}
+		};
+		
+		this.update(this.model);
 	}
-	
-	var tarr = [
-	 {username:"a", password:"b"},
-	 {username:"a", password:"b"}
-	];
-	
-	var jsom = new JsObjectModel(tarr);
-	
+
 	document.body.onload = function() {
-		var view = new TableView(jsom);
-		
+		var data = [
+		 {username:"a", password:"b"},
+		 {username:"a", password:"b"}
+		];
+		var model = new JsObjectModel(data);
+	
 		var div = document.createElement("div");
 		div.setAttribute("class", "container");
-		
-		div.appendChild(view.html);
-		
+		var table = document.createElement("table");
+		table.setAttribute("class", "table table-striped");
+		var header = document.createElement("h2");
+		header.innerHTML = "passwords yo";
+		div.appendChild(header);
+		div.appendChild(table);
 		document.body.appendChild(div);
 		
-		var button = document.createElement("button");
-		button.innerHTML = "submit";
-		button.onclick = function() {
-			alert(JSON.stringify(tarr));
+		var view = new TableView(table, model);
+		
+		var submit = document.createElement("button");
+		submit.innerHTML = "submit";
+		submit.onclick = function() {
+			for(entryIndex in model.innerData()){
+				var entry = model.innerData()[entryIndex];
+				var saved = true;
+				for(property in entry.innerData()) {
+					if(entry.innerData()[property].saved == false) {
+						saved = false;
+						entry.innerData()[property].saved = true;
+					}
+				}
+				if(saved == false) {
+					alert(JSON.stringify(data[entryIndex]));
+				}
+			}
 		};
-		document.body.appendChild(button);
+		div.appendChild(submit);
+		
+		var newdata = document.createElement("button");
+		newdata.innerHTML = "new";
+		newdata.onclick = function() {
+			data.push({username:"u", password:"p"});
+			model.applyData(data);
+			view.update(model);
+		};
+		div.appendChild(newdata);
 	};
 </script>
 
