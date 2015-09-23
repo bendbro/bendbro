@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+	<head><title>Title of the document</title></head>
+	<body></body>
+</html>
+
+<script>
+    /* mutation observer example
+	document.body.onload = function() {
+		var div = document.createElement("div");
+		div.setAttribute("contenteditable", true);
+		div.innerHTML = "Ayyyyyy";
+		var body = document.getElementsByTagName("body")[0];
+		body.appendChild(div);
+		
+		var observer = new MutationObserver(function(mutations) {
+			mutations.forEach(function(mutation) {
+				alert("Recording mutation: " + mutation.target.textContent);
+			});
+		});
+
+		observer.observe(div, {
+			attributes: false,
+			childList: false, // child element modification
+			characterData: true, // current value of data
+			characterDataOldValue: false, // previous value of data
+			subtree: true // inner elements
+		});
+	};*/
+
+	// Populator is a function. A function is an object. You can call a function.
+	function type(object) {
+		return Object.prototype.toString.call(object);
+	}
+
+	function Model() {
+		// Get data returns the data contained.
+		this.getData = function() {};
+		// Set data sets the data contained, without disruping the nested structure of Data objects.
+		this.setData = function(data) {};
+		// innerData returns the nested Data objects.
+		this.innerData = function() {};
+	}
+	
+	function PrimitiveObjectModel(property, containing) {
+		this.property = property;
+		this.containing = containing;
+		this.getData = function() {return this.containing[property]};
+		this.setData = function(data) {this.containing[property] = data;};
+		this.innerData = function() {return {};};
+	}
+	
+	function JsObjectModel(bind) {
+		this.bind = bind;
+		this.models = {};
+
+		this.applyData = function(update) {
+			for(property in update) {
+				var object = update[property];
+				if(this.models[property] != null) {
+					this.models[property].setData(object);
+				} else {
+					var model = null;
+					switch(type(update[property])) {
+						case "[object Object]":
+							model = new JsObjectModel(object);
+							break;
+						case "[object Array]":
+							model = new JsObjectModel(object);
+							break;
+						case "[object String]":
+							model = new PrimitiveObjectModel(property,update);
+							break;
+						case "[object Number]":
+							model = new PrimitiveObjectModel(property,update);
+							break;
+						default:
+							model = new PrimitiveObjectModel(property,update);
+					}
+					this.bind[property] = object;
+					this.models[property] = model;
+				}
+			}
+		};
+		
+		this.applyData(bind);
+		
+		this.getData = function() {
+			return this.bind;
+		};
+		
+		this.setData = function(update) {
+			applyData(update);
+		};
+		
+		this.innerData = function() {
+			return this.models;
+		};
+	}
+	
+	function View() {
+		// Called whenever the state of the rendered object changes, passes this object.
+		this.onChange = function(data) {};
+		this.bind = function(data) {};
+		this.unbind = function(name) {};
+	}
+	
+	function ItemView(model) {
+		this.model = model;
+		this.html = document.createElement("div");
+		this.html.innerHTML = model.getData();
+		this.html.setAttribute("contenteditable", true);
+		var model = this.model;
+		this.observer = new MutationObserver(function(mutations) {
+			mutations.forEach(function(mutation) {
+				model.setData(mutation.target.textContent);
+			});
+		});
+		this.observer.observe(this.html, {
+			attributes: false,
+			childList: false, // child element modification
+			characterData: true, // current value of data
+			characterDataOldValue: false, // previous value of data
+			subtree: true // inner elements
+		});
+	}
+	
+	function RowView(model) {
+		this.model = model;
+		this.views = {};
+		this.html = document.createElement("tr");
+		
+		var innerData = this.model.innerData();
+		for(property in innerData) {
+			var name = document.createElement("div");
+			name.innerHTML = property;
+			
+			this.views[property] = new ItemView(innerData[property]);
+			var data = this.views[property].html;
+			
+			var cell = document.createElement("td");
+			cell.appendChild(name);
+			cell.appendChild(data);
+			
+			this.html.appendChild(cell);
+		}
+	}
+	
+	function TableView(model) {
+		this.model = model;
+		this.html = document.createElement("table");
+		this.html.setAttribute("class","table table-striped");
+		this.views = {};
+		
+		var innerData = this.model.innerData();
+		for(property in innerData) {
+			this.views[property] = new RowView(innerData[property]);
+			var row = this.views[property].html;
+			this.html.appendChild(row);
+		}
+	}
+	
+	var tarr = [
+	 {username:"a", password:"b"},
+	 {username:"a", password:"b"}
+	];
+	
+	var jsom = new JsObjectModel(tarr);
+	
+	document.body.onload = function() {
+		var view = new TableView(jsom);
+		
+		var div = document.createElement("div");
+		div.setAttribute("class", "container");
+		
+		div.appendChild(view.html);
+		
+		document.body.appendChild(div);
+		
+		var button = document.createElement("button");
+		button.innerHTML = "submit";
+		button.onclick = function() {
+			alert(JSON.stringify(tarr));
+		};
+		document.body.appendChild(button);
+	};
+</script>
+
+<!-- Latest compiled and minified CSS -->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+
+<!-- Optional theme -->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap-theme.min.css">
+
+<!-- Latest compiled and minified JavaScript -->
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
