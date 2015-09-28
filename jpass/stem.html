@@ -28,7 +28,7 @@
 		
 		client.readdir("/Apps/JPass/", function(error, entries) {
 		  if (error) {
-			return showError(error);  // Something went wrong.
+			return alert(error);  // Something went wrong.
 		  }
 
 		  alert("Your Dropbox contains " + entries.join(", "));
@@ -36,12 +36,12 @@
 		
 		client.writeFile("efile.txt",tme,function(error,stat) {
 			if(error) {
-				return showError(error);
+				return alert(error);
 			}
 
 			client.readFile("efile.txt",function(error, data) {
 				if (error) {
-					return showError(error);  // Something went wrong.
+					return alert(error);  // Something went wrong.
 				}
 				alert(data);  // data has the file's contents
 				alert(sjcl.decrypt("testpass",data));
