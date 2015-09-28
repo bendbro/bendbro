@@ -145,27 +145,6 @@
 		
 		this.update(this.model);
 	}
-	
-			var tm = "133713371337 This is a test! 133713371337";
-			var tme = sjcl.encrypt("testpass",tm);
-			
-			alert(tme);
-			
-						client.writeFile("efile.txt",tme,function(error,stat) {
-				if(error) {
-					return alert(error);
-				}
-
-				client.readFile("efile.txt",function(error, data) {
-					if (error) {
-						return alert(error);  // Something went wrong.
-					}
-					alert(data);  // data has the file's contents
-					alert(sjcl.decrypt("testpass",data));
-				});
-			});
-		  }
-		});
 			
 	document.body.onload = function() {
 		var client = new Dropbox.Client({ key: "q29ccmrl21l9e71" });
