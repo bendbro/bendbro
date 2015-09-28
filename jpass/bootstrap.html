@@ -204,9 +204,10 @@
 				}
 				if(saved == false) {
 					client.writeFile(""+entryIndex,sjcl.encrypt("testpass",JSON.stringify(data[entryIndex])),function(error,stat) {
-					if(error) {
-						return alert(error);
-					}
+						if(error) {
+							return alert(error);
+						}
+					});
 				}
 			}
 		};
