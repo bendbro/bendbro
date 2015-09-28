@@ -149,10 +149,7 @@
 	document.body.onload = function() {
 		var client = new Dropbox.Client({ key: "q29ccmrl21l9e71" });
 		
-		var data = [
-		 {username:"a", password:"b", website:"some website"},
-		 {username:"a", password:"b", website:"another website"}
-		];
+		var data = [];
 		var model = new JsObjectModel(data);
 	
 		var div = document.createElement("div");
