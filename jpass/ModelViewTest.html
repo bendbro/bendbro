@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+	<head><title>Dropbox password manager</title></head>
+	<body></body>
+</html>
+
+<script src="ModelView.js"></script>
+<script>
+	document.body.onload = function() {
+		var table = document.createElement("table");
+		var row = document.createElement("row");
+		table.appendChild(row);
+		document.body.appendChild(table);
+
+		var json = {ayy:"ayyy", ayyyyyy:"ayyyyy"};
+		var model = new JsObjectModel(json);
+		
+		var rowView = new PasswordRowView(row,["ayyy","ayyyyy"],model);
+	};
+</script>

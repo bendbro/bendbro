@@ -1,0 +1,60 @@
+// mutation observer example
+	document.body.onload = function() {
+		var div = document.createElement("div");
+		div.setAttribute("contenteditable", true);
+		div.innerHTML = "Ayyyyyy";
+		var body = document.getElementsByTagName("body")[0];
+		body.appendChild(div);
+		
+		var observer = new MutationObserver(function(mutations) {
+			mutations.forEach(function(mutation) {
+				alert("Recording mutation: " + mutation.target.textContent);
+			});
+		});
+
+		observer.observe(div, {
+			attributes: false,
+			childList: false, // child element modification
+			characterData: true, // current value of data
+			characterDataOldValue: false, // previous value of data
+			subtree: true // inner elements
+		});
+	};*/
+
+//Dropbox example
+	var client = new Dropbox.Client({ key: "q29ccmrl21l9e71" });
+	client.authenticate(function(error, client) {
+	  if (error) {
+		alert("Failed to authenticate with dropbox");
+	  } else {
+		alert("Authenticated, encrypting data.");
+	  
+		var tm = "133713371337 This is a test! 133713371337";
+		var tme = sjcl.encrypt("testpass",tm);
+		
+		alert(tme);
+		
+		client.readdir("/", function(error, entries) {
+		  if (error) {
+			return alert(error);  // Something went wrong.
+		  }
+
+		  alert("Your Dropbox contains " + entries.join(", "));
+		});
+		
+		client.writeFile("efile.txt",tme,function(error,stat) {
+			if(error) {
+				return alert(error);
+			}
+
+			client.readFile("efile.txt",function(error, data) {
+				if (error) {
+					return alert(error);  // Something went wrong.
+				}
+				alert(data);  // data has the file's contents
+				alert(sjcl.decrypt("testpass",data));
+			});
+		});
+	  }
+	});
+
