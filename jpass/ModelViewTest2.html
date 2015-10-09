@@ -56,6 +56,7 @@
 	client.authenticate(function(error, client) {
 		client.readFile("credentials.json",function(error, fileData) {
 			if(error) {
+				alert("Writing default file");
 				client.writeFile("credentials.json",sjcl.encrypt(masterPassword,JSON.stringify(data)),function(error,stat) {});
 			}
 		
@@ -93,7 +94,7 @@
 			}
 		}
 		
-		var newdata = document.getElementById("submitchanges");
+		var newdata = document.getElementById("addcredential");
 		newdata.onclick = function() {
 			data.push({domain:"domain",username:"username", password:"password"});
 			model.applyData(data);
