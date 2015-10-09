@@ -55,10 +55,7 @@
 	
 	client.authenticate(function(error, client) {
 		client.readFile("credentials.json",function(error, fileData) {
-			if(error) {
-				alert("Writing default file");
-				client.writeFile("credentials.json",sjcl.encrypt(masterPassword,JSON.stringify(data)),function(error,stat) {});
-			} else {
+			if(!error)
 				dataFile = fileData;
 				if(dataFile != null && masterPassword != null) {
 					dataFileUpdateNotify.call();
