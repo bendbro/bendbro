@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>
+		Ben's Encryption
+		</title>
+	</head>
+</html>
+
+<script src="jquery-2.1.4.min.js"></script>
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap-theme.min.css">
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+<script src="ModelView.js"></script>
+<script>
+	var client = new Dropbox.Client({ key: "q29ccmrl21l9e71" });
+	var data = [];
+	var model = new JsObjectModel(data);
+	var table = document.createElement("table");
+	table.setAttribute("class", "table table-striped");
+	var view = new LabelledTableView(table,["username","password"], model);
+	
+	client.authenticate(function(error, client) {
+	  if (error) {
+		alert("Failed to authenticate with dropbox");
+	  } else {
+		alert("Authenticated, encrypting data.");
+		client.readdir("/", function(error, entries) {
+		  if (error) {
+			return alert(error);  // Something went wrong.
+		  }
+		  for(file in entries) {
+			client.readFile(file,function(error, fileData) {
+				if (error) {
+					return alert(error);  // Something went wrong.
+				}
+				data.push(JSON.parse(sjcl.decrypt("testpass",fileData)));
+				model.applyData(data);
+				view.update(model);
+			});
+		  }
+		});
+	  }
+	});
+		
+	var submit = document.createElement("button");
+	submit.innerHTML = "submit";
+	submit.onclick = function() {
+		for(entryIndex in model.innerData()){
+			var entry = model.innerData()[entryIndex];
+			var saved = true;
+			for(property in entry.innerData()) {
+				if(entry.innerData()[property].saved == false) {
+					saved = false;
+					entry.innerData()[property].saved = true;
+				}
+			}
+			if(saved == false) {
+				client.writeFile(""+entryIndex,sjcl.encrypt("testpass",JSON.stringify(data[entryIndex])),function(error,stat) {
+					if(error) {
+						return alert(error);
+					}
+				});
+			}
+		}
+	};
+	
+	var newdata = document.createElement("button");
+	newdata.innerHTML = "new";
+	newdata.onclick = function() {
+		data.push({username:"u", password:"p"});
+		model.applyData(data);
+		view.update(model);
+	};
+	div.appendChild(newdata);
+
+	document.body.onload = function() {
+		document.body.appendChild(table);
+		document.body.appendChild(submit);
+		document.body.appendChild(newdata);
+	};
+</script>

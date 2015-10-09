@@ -91,50 +91,10 @@ function ItemView(html, model) {
 		characterDataOldValue: false, // previous value of data
 		subtree: true // inner elements
 	});
-}
-
-function RowView(row, model) {
-	this.row = row;
-	this.model = model;
-	this.views = {};
 	
 	this.update = function(model) {
-		var innerData = model.innerData();
-		for(rowViewProperty in innerData) {
-			if(this.views[rowViewProperty] == null) {
-				var rowElement = document.createElement("td");
-				var nameDiv = document.createElement("div");
-				nameDiv.innerHTML = rowViewProperty;
-				var valueDiv = document.createElement("div");
-				rowElement.appendChild(nameDiv);
-				rowElement.appendChild(valueDiv);
-				this.row.appendChild(rowElement);
-				this.views[rowViewProperty] = new ItemView(valueDiv, innerData[rowViewProperty]);
-			}
-		}
+		return;
 	};
-	
-	this.update(this.model);
-}
-
-function TableView(table, model) {
-	this.table = table;
-	this.model = model;
-	this.views = {};
-	
-	this.update = function(model) {
-		var innerData = model.innerData();
-		for(tableViewProperty in innerData) {
-			if(this.views[tableViewProperty] == null) {
-				var row = document.createElement("tr");
-				table.appendChild(row);
-				this.views[tableViewProperty] = new RowView(row, innerData[tableViewProperty]);
-			}
-			this.views[tableViewProperty].update(innerData[tableViewProperty]);
-		}
-	};
-	
-	this.update(this.model);
 }
 
 function PasswordRowView(row, labels, model) {
@@ -144,17 +104,16 @@ function PasswordRowView(row, labels, model) {
 	this.labels = labels;
 	
 	this.update = function(model) {
-		for(var label in labels) {
-			alert(label + " wassup");
-			if(this.views[label] == null) {
+		for(var label in this.labels) {
+			var labell = this.labels[label];
+			if(this.views[labell] == null) {
 				var div = document.createElement("div");
 				var td = document.createElement("td");
 				this.row.appendChild(td);
 				td.appendChild(div);
-				alert(JSON.stringify(model));
-				this.views[label] = new ItemView(div, model.innerData()[label]);
+				this.views[labell] = new ItemView(div, model.innerData()[labell]);
 			}
-			this.views[label].update(model.innerData[label]);
+			this.views[labell].update(model.innerData()[labell]);
 		}
 	};
 	
@@ -167,13 +126,26 @@ function LabelledTableView(table, labels, model) {
 	this.model = model;
 	this.views = {};
 	
+	var header = this.table.createTHead();
+	var hrow = header.insertRow(0);
+	for(label in labels) {
+		var labell = labels[label];
+		var cell = hrow.insertCell(hrow.cells.length);
+		var h = document.createElement("h3");
+		cell.appendChild(h);
+		h.innerHTML = labell;
+	}
+	
 	this.update = function(model) {
-		for(var property in model) {
-			if(this.views[property] == null) {
-				
+		for(property in model.innerData()) {
+			var lproperty = property;
+			if(this.views[lproperty] == null) {
+				var row = this.table.insertRow(this.table.rows.length)
+				this.views[lproperty] = new PasswordRowView(row,this.labels,model.innerData()[lproperty]);
 			}
+			this.views[lproperty].update(model.innerData()[lproperty]);
 		}
 	};
+	
+	this.update(this.model);
 }
-
-alert("STILL LOADS!");
