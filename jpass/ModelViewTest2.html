@@ -47,15 +47,14 @@
 	var view = new LabelledTableView(document.getElementById("credentials"),["domain","username","password"], model);
 	
 	var dataFileUpdateNotify = function() {
-		data = scjl.decrypt(masterPassword, dataFile);
-		alert(masterPassword);
+		data = JSON.parse(sjcl.decrypt(masterPassword, dataFile));
 		model.applyData(data);
 		view.update(model);
 	};
 	
 	client.authenticate(function(error, client) {
 		client.readFile("credentials.json",function(error, fileData) {
-			if(!error)
+			if(!error) {
 				dataFile = fileData;
 				if(dataFile != null && masterPassword != null) {
 					dataFileUpdateNotify.call();
