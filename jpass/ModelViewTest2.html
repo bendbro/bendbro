@@ -55,6 +55,10 @@
 	
 	client.authenticate(function(error, client) {
 		client.readFile("credentials.json",function(error, fileData) {
+			if(error) {
+				client.writeFile("credentials.json",sjcl.encrypt(masterPassword,JSON.stringify(data)),function(error,stat) {});
+			}
+		
 			dataFile = fileData;
 			if(dataFile != null && masterPassword != null) {
 				dataFileUpdateNotify.call();
