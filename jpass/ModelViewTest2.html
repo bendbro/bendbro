@@ -7,7 +7,6 @@
 	</head>
 </html>
 
-<script src="jquery-2.1.4.min.js"></script>
 <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
 <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap-theme.min.css">
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
@@ -18,27 +17,21 @@
 	var model = new JsObjectModel(data);
 	var table = document.createElement("table");
 	table.setAttribute("class", "table table-striped");
-	var view = new LabelledTableView(table,["username","password"], model);
+	var view = new LabelledTableView(table,["domain","username","password"], model);
 	
 	client.authenticate(function(error, client) {
 	  if (error) {
 		alert("Failed to authenticate with dropbox");
 	  } else {
-		alert("Authenticated, encrypting data.");
-		client.readdir("/", function(error, entries) {
-		  if (error) {
-			return alert(error);  // Something went wrong.
-		  }
-		  for(file in entries) {
-			client.readFile(file,function(error, fileData) {
-				if (error) {
-					return alert(error);  // Something went wrong.
-				}
-				data.push(JSON.parse(sjcl.decrypt("testpass",fileData)));
-				model.applyData(data);
-				view.update(model);
-			});
-		  }
+		client.readFile("credentials.json",function(error, fileData) {
+			if (error) {
+				return alert(error);  // Something went wrong.
+			}
+			
+			
+			data.push(JSON.parse(sjcl.decrypt("testpass",fileData)));
+			model.applyData(data);
+			view.update(model);
 		});
 	  }
 	});
@@ -68,7 +61,7 @@
 	var newdata = document.createElement("button");
 	newdata.innerHTML = "new";
 	newdata.onclick = function() {
-		data.push({username:"u", password:"p"});
+		data.push({domain:"domain, "username:"username", password:"password"});
 		model.applyData(data);
 		view.update(model);
 	};
@@ -79,4 +72,23 @@
 		document.body.appendChild(submit);
 		document.body.appendChild(newdata);
 	};
+	
+	/*
+			alert("Authenticated, encrypting data.");
+		client.readdir("/", function(error, entries) {
+		  if (error) {
+			return alert(error);  // Something went wrong.
+		  }
+		  for(file in entries) {
+			client.readFile(file,function(error, fileData) {
+				if (error) {
+					return alert(error);  // Something went wrong.
+				}
+				data.push(JSON.parse(sjcl.decrypt("testpass",fileData)));
+				model.applyData(data);
+				view.update(model);
+			});
+		  }
+		});
+	*/
 </script>
