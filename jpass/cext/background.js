@@ -15,22 +15,8 @@ function loadScript(path, callback) {
     head.appendChild(script);
 }
 
-chrome.runtime.getBackgroundPage(function(backgroundWindow) {
-	var client = backgroundWindow.client;
-	
-	loadScript("resources/dropbox.min.js", function() {
-		client.authenticate(function(error,client){
-			if(error) {
-				alert("auth error!");
-			} else {
-				client.readFile("credentials.json", function(error,data) {
-					if(error) {
-						alert("read error!");
-					} else {
-						alert(data);
-					}
-				});
-			}
-		});	
-	});
+var client = 1337;
+loadScript("resources/dropbox.min.js",function() {
+	client = new Dropbox.Client({key:"q29ccmrl21l9e71"});
+	client.authDriver(new Dropbox.AuthDriver.ChromeExtension({receiverPath: "/resources/chrome_oauth_receiver.html"}));
 });
