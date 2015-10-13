@@ -15,23 +15,30 @@ function loadScript(path, callback) {
     head.appendChild(script);
 }
 
-function findLoginFields(candidates, node) {
-	var passwordIdentifiers = ["password","pw","pword","pass"];
+function findPasswordFields(candidates, node) {
+	var nodel = node;
+	var passwordIdentifiers = [{k:"password",v:1.0},{k:"pw",v:.5},{k:"pword",v:.25},{k:"pass",v:.1}];
 	
-	var attrs = node.attributes;
+	var attrs = nodel.attributes;
+	var hits = 0;
 	if(attrs != null) {
 		for(var i = attrs.length - 1; i >= 0; i--) {
-			var contents = attrs[i].name;
 			for(piIndex in passwordIdentifiers) {
-				if(contents.indexOf(passwordIdentifiers[piIndex]) > -1) {
-					candidates.passwords.push(contents);
+				if(attrs[i].value.indexOf(passwordIdentifiers[piIndex].k) > -1) {
+					hits += passwordIdentifiers[piIndex].v;
 				}
 			}
 		}
 	}
+	
+	if(hits > 0) {
+		candidates.passwords.push({k:nodel,v:hits});
+		node.style.backgroundColor = "red";
+	}
 
-	for(childNode in node.childNodes) {
-		findLoginFields(candidates, childNode);
+	for(childNodeIndex in nodel.childNodes) {
+		var childNodeIndexL = childNodeIndex;
+		findPasswordFields(candidates, nodel.childNodes[childNodeIndexL]);
 	}
 	
 	return candidates;
@@ -49,13 +56,13 @@ loadScript("resources/ModelView.js", function() {
 	
 	chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
 	  chrome.tabs.executeScript(tab.id,{
-		code: findLoginFields.toString() + '\nalert(JSON.stringify(findLoginFields({passwords:[]},document.body)));' + 'document.body.style.backgroundColor="red";'
+		code: findPasswordFields.toString() + '\nconsole.log("here we go");console.log(findPasswordFields({passwords:[]},document.body));'
 	  });
 	});
 
 	chrome.tabs.onCreated.addListener(function(tabId, changeInfo, tab) {
 	  chrome.tabs.executeScript(tab.id,{
-		code: findLoginFields.toString() + '\nalert(JSON.stringify(findLoginFields({passwords:[]},document.body)));' + 'document.body.style.backgroundColor="red";'
+		code: findPasswordFields.toString() + '\nconsole.log("here we go");console.log(findPasswordFields({passwords:[]},document.body));'
 	  });
 	});
 })});

@@ -1,6 +1,7 @@
 function main(clientReference, dataReference, modelReference, masterPasswordReference) {
 	var client = clientReference.get();
 	var dataFile = null; 
+	
 	var view = new LabelledTableView(document.getElementById("credentials"),["domain","username","password"], modelReference.get());
 	
 	var dataFileUpdateNotify = function() {

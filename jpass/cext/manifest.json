@@ -10,9 +10,10 @@
     "default_popup": "popup.html"
   },
   "permissions": [
+	"<all_urls>",
 	"activeTab",
-    "tabs", "<all_urls>",
-    "https://*.dropbox.com/*",
+    "tabs", 
+    "notifications",
     "storage"
   ],
   "background": {
