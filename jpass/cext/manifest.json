@@ -14,20 +14,18 @@
 	"activeTab",
     "tabs", 
     "notifications",
-    "storage"
+    "storage",
+	"contextMenus"
   ],
-  "externally_connectable": {
-    "matches": [
-	  "*://*.example.com/*"
-	]
-  },
   "background": {
     "scripts": [
       "background.js"
-    ],
-    "persistent": false
+    ]
   },
   "web_accessible_resources": [
     "resources/chrome_oauth_receiver.html"
-  ]
+  ],
+  "icons": {
+	"16": "icon16.png"
+  }
 }

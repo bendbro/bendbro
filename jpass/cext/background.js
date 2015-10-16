@@ -130,6 +130,12 @@ function injectMain(credentials) {
 	maxCandidate.password.k.value = credentials.password;
 }
 
+//TODO: random password generate right click menubar
+//TODO: onsubmit user/password/domain scraping
+//TODO: subdomain vs domain selection
+//TODO: make extension sync with webpage (refresh button?).
+//TODO: modal password injection
+
 var client = 1337;
 var data = [];
 var model = null;
@@ -166,3 +172,11 @@ loadScript("resources/ModelView.js", function() {
 	  }
 	});
 })});
+
+chrome.contextMenus.create({
+ title: "Create random password.",
+ contexts:["selection"],  // ContextType
+ onclick: console.log // A callback function
+}, function(error) {
+	console.log(error);
+});
