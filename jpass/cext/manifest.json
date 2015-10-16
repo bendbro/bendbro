@@ -16,6 +16,11 @@
     "notifications",
     "storage"
   ],
+  "externally_connectable": {
+    "matches": [
+	  "*://*.example.com/*"
+	]
+  },
   "background": {
     "scripts": [
       "background.js"
