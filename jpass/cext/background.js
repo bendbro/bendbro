@@ -36,6 +36,24 @@ function extractRootDomain(domain) {
 	return domainSplit[domainSplit.length-2] + "." + domainSplit[domainSplit.length-1];
 }
 
+var passwordIdentifiers = [{k:"password",v:1.0},{k:"pw",v:.5},{k:"pword",v:.25},{k:"pass",v:.1}];
+var usernameIdentifiers = [{k:"email",v:1.0},{k:"text",v:1.0}];
+
+function targetLiklihood(node, identifiers) {
+	var attrs = node.attributes;
+	var hits = 0;
+	if(attrs != null) {
+		for(var i = attrs.length - 1; i >= 0; i--) {
+			for(piIndex in identifiers) {
+				if(attrs[i].value.toLowerCase().indexOf(identifiers[piIndex].k) > -1) {
+					hits += identifiers[piIndex].v;
+				}
+			}
+		}
+	}
+	return hits;
+}
+
 function findPasswordFields(candidates, node) {
 	var nodel = node;
 	var passwordIdentifiers = [{k:"password",v:1.0},{k:"pw",v:.5},{k:"pword",v:.25},{k:"pass",v:.1}];
@@ -108,7 +126,7 @@ function findTextField(node, last, depth) {
 	}
 }
 
-function injectMain(credentials) {
+function autofillPasswords(credentials) {
 	var candidates = [];
 	findPasswordFields(candidates,document.body);
 	
@@ -130,11 +148,65 @@ function injectMain(credentials) {
 	maxCandidate.password.k.value = credentials.password;
 }
 
+function relayMessage(message) {
+	alert(JSON.stringify(message));
+	chrome.runtime.sendMessage({kind:"credential submit",value:message},function(response) {
+		alert("ayy lmao");
+	});
+}
+
+function submitListener(form, userNode, passNode) {
+	form.injectuserNode = userNode;
+	form.injectpassNode = passNode;
+	
+	this.listen = function() {
+		console.log(this);
+		relayMessage({
+			username:this.injectuserNode.value, 
+			password:this.injectpassNode.value,
+			location:extractRootDomain(extractDomain(window.location.href))
+		});
+	}
+}
+
+function attachFormListeners(form, node) {
+	var forms = document.getElementsByTagName("form");
+	for(var formIndex in forms) {
+		var form = forms[formIndex];
+		
+		var candidates = [];
+		findPasswordFields(candidates,form);
+			
+		var maxLiklihood = 0;
+		var maxCandidate = null;
+		for(candidatesIndex in candidates) {
+			var candidate = candidates[candidatesIndex];
+			if(candidate.password.v > maxLiklihood) {
+				maxLiklihood = candidate.password.v;
+				maxCandidate = candidate;
+			}
+		}
+		
+		if(maxCandidate != null) {
+			var pFound = findTextField(maxCandidate.password.k.parentNode, maxCandidate.password.k, 0);
+			if(pFound.node != null) {
+				form.onsubmit = new submitListener(form,pFound.node,maxCandidate.password.k).listen;
+			}
+		}
+	}
+}
+
+function injectedCodeMain(credentials) {
+	autofillPasswords(credentials);
+	attachFormListeners();
+}
+
 //TODO: random password generate right click menubar
 //TODO: onsubmit user/password/domain scraping
 //TODO: subdomain vs domain selection
 //TODO: make extension sync with webpage (refresh button?).
 //TODO: modal password injection
+//TODO: consider non-programatic injection via contentscripts
 
 var client = 1337;
 var data = [];
@@ -162,16 +234,33 @@ loadScript("resources/ModelView.js", function() {
 	  if(matchingCredentials != null) {
 		  console.log({action:"injecting script.",tab:tab,credentials:matchingCredentials});
 		  chrome.tabs.executeScript(tab.id,{
+			//todo: group into classes to reduce injection length
 			code: 
-				'console.log("executing injected script")' + '\n' +
+				'console.log("executing injected script");\n' +
+				'passwordIdentifiers='+JSON.stringify(passwordIdentifiers) + ';\n' +
+				'usernameIdentifiers='+JSON.stringify(usernameIdentifiers) + ';\n' +
+				extractDomain.toString() + '\n' +
+				extractRootDomain.toString() + '\n' +
+				relayMessage.toString() + '\n' + 
+				submitListener.toString() + '\n' +
+				targetLiklihood.toString() + '\n' +
+				attachFormListeners.toString() + '\n' +
 				findTextField.toString() + '\n' + 
 				findPasswordFields.toString() + '\n' + 
-				injectMain.toString() + '\n' + 
-				'injectMain(' + JSON.stringify(matchingCredentials) + ');' + '\n'
+				autofillPasswords.toString() + '\n' +
+				injectedCodeMain.toString() + '\n' +
+				'injectedCodeMain(' + JSON.stringify(matchingCredentials) + ');\n'
 		  });
 	  }
 	});
 })});
+
+chrome.runtime.onMessage.addListener(
+  function(request, sender, sendResponse) {
+    console.log(request);
+    if (request.greeting == "hello")
+      sendResponse({farewell: "goodbye"});
+  });
 
 chrome.contextMenus.create({
  title: "Create random password.",
