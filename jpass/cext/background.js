@@ -149,10 +149,9 @@ function autofillPasswords(credentials) {
 }
 
 function relayMessage(message) {
-	alert(JSON.stringify(message));
-	chrome.runtime.sendMessage({kind:"credential submit",value:message},function(response) {
-		alert("ayy lmao");
-	});
+	console.log("sending");
+	chrome.runtime.sendMessage({kind:"credential submit",value:message});
+	console.log(message);
 }
 
 function submitListener(form, userNode, passNode) {
@@ -160,11 +159,10 @@ function submitListener(form, userNode, passNode) {
 	form.injectpassNode = passNode;
 	
 	this.listen = function() {
-		console.log(this);
 		relayMessage({
 			username:this.injectuserNode.value, 
 			password:this.injectpassNode.value,
-			location:extractRootDomain(extractDomain(window.location.href))
+			domain:extractRootDomain(extractDomain(window.location.href))
 		});
 	}
 }
@@ -255,17 +253,18 @@ loadScript("resources/ModelView.js", function() {
 	});
 })});
 
-chrome.runtime.onMessage.addListener(
-  function(request, sender, sendResponse) {
-    console.log(request);
-    if (request.greeting == "hello")
-      sendResponse({farewell: "goodbye"});
-  });
+chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+	console.log(request + "\n" + JSON.stringify(sender, null, 4) + "\n");
+	if(request.kind.indexOf("credential submit") > -1) {
+		data.push({domain:request.value.domain,username:request.value.username, password:request.value.password});
+		model.applyData(data);
+	}
+});
 
 chrome.contextMenus.create({
  title: "Create random password.",
  contexts:["selection"],  // ContextType
- onclick: console.log // A callback function
+ onclick: console.log('wassup') // A callback function
 }, function(error) {
-	console.log(error);
+	console.log(chrome.runtime.lastError);
 });

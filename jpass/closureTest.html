@@ -1,0 +1,16 @@
+<script>
+var Test = function(p) {
+	this.test = function() {
+		if(p.indexOf("inner") == -1) {
+			var innerTest = new Test("inner" + p);
+			innerTest.test();
+		}
+		console.log(p);
+	}
+}
+
+var myTest = new Test("hello world");
+var myOtherTest = new Test("Not hello world");
+myTest.test();
+myOtherTest.test();
+</script>

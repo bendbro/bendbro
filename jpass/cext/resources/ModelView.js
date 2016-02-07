@@ -28,6 +28,7 @@ function JsObjectModel(bind) {
 	this.models = {};
 
 	this.applyData = function(update) {
+		this.models = {};
 		for(property in update) {
 			var pprop = property;
 			var object = update[pprop];
@@ -135,12 +136,16 @@ function LabelledTableView(table, labels, model) {
 		cell.appendChild(h);
 		h.innerHTML = labell;
 	}
+	this.body = this.table.createTBody();
 	
 	this.update = function(model) {
+		this.body.innerHTML = "";
+		this.views = {};
+		console.log(model);
 		for(property in model.innerData()) {
 			var lproperty = property;
 			if(this.views[lproperty] == null) {
-				var row = this.table.insertRow(this.table.rows.length)
+				var row = this.body.insertRow(this.body.rows.length)
 				this.views[lproperty] = new PasswordRowView(row,this.labels,model.innerData()[lproperty]);
 			}
 			this.views[lproperty].update(model.innerData()[lproperty]);

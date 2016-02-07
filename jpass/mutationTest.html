@@ -1,0 +1,36 @@
+<html></html>
+<script>
+
+function type(object) {
+	return Object.prototype.toString.call(object);
+}
+
+var root = {obj:{}};
+
+function listenify(obj,callback) {
+	var newval = null;
+	if(type(obj) == "[object Object]") {
+		newval = {};
+	} else if(type(obj) == "[object Array]") {
+		newval = [];
+	}
+	if(newval != null) {
+		for(fproperty in obj) { var property = fproperty;
+			Object.defineProperty(newval, property, {
+				get: function() { return this.val },
+				set: function(val) {
+					callback.call(property,this.val,val);
+					this.val = listenify(val);
+				}
+			})
+			newval[property] = obj[property];
+		}
+		obj = newval;
+	}
+	return obj;
+}
+
+root = listenify(root, function(a,b,c) { console.log(a+" "+b+" "+c); });
+root.obj["name"] = "name";
+
+</script>

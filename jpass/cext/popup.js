@@ -3,6 +3,29 @@ function main(clientReference, dataReference, modelReference, masterPasswordRefe
 	var dataFile = null; 
 	
 	var view = new LabelledTableView(document.getElementById("credentials"),["domain","username","password"], modelReference.get());
+	var oldupdate = view.update;
+	var removed = false;
+	view.update = function(modela) {
+		oldupdate.call(view,modela);
+		for(viewIndex in view.views) {
+			var row = view.views[viewIndex].row;
+			if(row.getElementsByTagName("button").length == 0) {
+				var button = document.createElement("button");
+				button.setAttribute("class","close");
+				button.innerHTML = "&times";
+				button.injectViewIndex = viewIndex;
+				button.onclick = function() {
+					console.log(this.injectViewIndex);
+					dataReference.get().splice(this.injectViewIndex,1);
+					modelReference.get().applyData(dataReference.get());
+					console.log(dataReference.get());
+					view.update(modelReference.get());
+					removed = true;
+				};
+				row.appendChild(button);
+			}
+		}
+	}
 	
 	var dataFileUpdateNotify = function() {
 		dataReference.set(JSON.parse(sjcl.decrypt(masterPasswordReference.get(), dataFile)));
@@ -10,16 +33,19 @@ function main(clientReference, dataReference, modelReference, masterPasswordRefe
 		view.update(modelReference.get());
 	};
 	
-	client.authenticate(function(error, client) {
-		client.readFile("credentials.json",function(error, fileData) {
-			if(!error) {
-				dataFile = fileData;
-				if(dataFile != null && masterPasswordReference.get() != null) {
-					dataFileUpdateNotify.call();
+	//todo: fix this hack, also modelview is fucking idiotic
+	if(dataReference.get().length == 0) {
+		client.authenticate(function(error, client) {
+			client.readFile("credentials.json",function(error, fileData) {
+				if(!error) {
+					dataFile = fileData;
+					if(dataFile != null && masterPasswordReference.get() != null) {
+						dataFileUpdateNotify.call();
+					}
 				}
-			}
+			});
 		});
-	});
+	}
 	
 	function unlock() {
 		masterPasswordReference.set(document.getElementById("masterPassword").value);
@@ -57,7 +83,8 @@ function main(clientReference, dataReference, modelReference, masterPasswordRefe
 				}
 			}
 		}
-		if(saved == false) {
+		if(saved == false || removed == true) {
+			removed = false;
 			client.writeFile("credentials.json",sjcl.encrypt(masterPasswordReference.get(),JSON.stringify(dataReference.get())),function(error,stat) {});
 		}
 	}
@@ -77,7 +104,7 @@ chrome.runtime.getBackgroundPage(function(backgroundWindow) {
 				return backgroundWindow.client;
 			},
 			set : function(value) {
-				return backgroundWindow.client = value;
+				backgroundWindow.client = value;
 			}
 		},
 		{
@@ -85,7 +112,7 @@ chrome.runtime.getBackgroundPage(function(backgroundWindow) {
 				return backgroundWindow.data;
 			},
 			set : function(value) {
-				return backgroundWindow.data = value;
+				backgroundWindow.data = value;
 			}
 		},
 		{
@@ -93,7 +120,7 @@ chrome.runtime.getBackgroundPage(function(backgroundWindow) {
 				return backgroundWindow.model;
 			},
 			set : function(value) {
-				return backgroundWindow.model = value;
+				backgroundWindow.model = value;
 			}
 		},
 		{
@@ -101,7 +128,7 @@ chrome.runtime.getBackgroundPage(function(backgroundWindow) {
 				return backgroundWindow.masterPassword;
 			},
 			set : function(value) {
-				return backgroundWindow.masterPassword = value;
+				backgroundWindow.masterPassword = value;
 			}
 		}
 	);
