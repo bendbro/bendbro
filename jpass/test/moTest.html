@@ -1,0 +1,59 @@
+<html>
+    <body>
+        <div>
+            <form>
+                <input id="c1" type="text">
+            </form>
+            <div id="c2" contenteditable="true">
+                hello
+            </div>
+        </div>
+    </body>
+</html>
+
+<script>
+    /*
+    var InputObserver = new function(accepted) {
+        this.listeners = [];
+        this.observers = new Map();
+
+        var _accepted = function(element) {
+            return element != null && accepted(element);
+        };
+
+        function observe(element) {
+            if(_accepted(element)) {
+                var observer = new MutationObserver(function(mutations) {
+                    mutations.forEach(function(mutation) {
+                        console.log(mutation.type);
+                    });
+                });
+
+                observer.observe(element, { attributes: true, childList: true, characterData: true });
+            }
+        }
+
+        function notifyListeners(element, mutation) {
+            this.listeners.forEach(function(listener)) {
+                listener(element, mutation);
+            }
+        }
+    }*/
+
+    document.body.onload = function() {
+        var observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                console.log(mutation.target);
+            });
+        });
+
+        observer.observe(document.body, {
+            childList:true,
+            attributes:true,
+            characterData:true,
+            subtree:true,
+        });
+
+        console.log('observing');
+    };
+</script>
