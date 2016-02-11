@@ -34,36 +34,54 @@ client.authenticate(function(error, client) {
     });
 });
 
-//Set up script injection and communication
 var tabStateMap = new Map();
+function finalizeTabState(tabId) {
+	var tabState = tabStateMap.get(tabId);
+	tabStateMap.delete(tabId);
+	
+	var credentials = tabState.latestCredentials;
+	if(credentials != null) {
+		
+	}
+}
 
 chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
     if(!tabStateMap.has(tabId)) {
         tabStateMap.set(tabId,{state:"attempt-login", url:tab.url});
     }
 
+	if(message.credentials !=)
     //console.log(tabId + " " + JSON.stringify(changeInfo));
 });
 
 // Flushes any dom change information, saving any credentials within.
 chrome.tabs.onRemoved.addListener(function(tabId,changeInfo) {
     //console.log(tabId + " " + JSON.stringify(changeInfo));
+	
+	
+	tabStateMap.delete(tabId);
 });
 
 chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
     console.log(message);
 
     if(message.reason == "request-credentials") {
+		console.log('credentials requested');
         var tabState = tabStateMap.get(sender.tab.id);
-        console.log(message);
         if(tabState != null) {
             if(tabState.state == "attempt-login" && tabState.url == sender.tab.url) {
                 var credentials = findCredentialsFor(decryptedData,sender.tab.url);
                 console.log(credentials);
             }
         }
-    } else if(message.reason == "save-credentials") {
-        var credentials = message.credentials;
+    } else if(message.reason == "submit-credentials") {
+		console.log('credentials submitted');
+		var tabState = tabStateMap.get(sender.tab.id);
+		tabState.latestCredentials = message.credentials);
+    }
+});
+
+/*
         data.push(credentials);
         //TODO: synchronize with file state if it has been updated from other devices.
         //TODO: detect if master password not yet set, queue up a write.
@@ -72,8 +90,6 @@ chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
                 return alert(error);
             }
         });
-    }
-});
 
 function writeAll(message) {
     chrome.tabs.query({}, function(tabs) {
@@ -83,7 +99,6 @@ function writeAll(message) {
     });
 }
 
-/*
 chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
     console.log('background.js injecting ' + tabId);
     chrome.tabs.executeScript(tabId,{file:"inject.js"});

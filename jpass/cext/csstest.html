@@ -1,0 +1,52 @@
+<html>
+	<h1> hello </h1>
+	<body>
+		<p> paragraph </P>
+		<div> hello div </div>
+		<div> hello div2 </div>
+	</body>
+<html>
+
+<script>
+	document.body.onload = function() {
+		for(var i = 0; i < 100; i++) {
+			var div = document.createElement('div');
+			div.innerHTML = "Hello " + i;
+			document.body.appendChild(div);
+		}
+	};
+	
+	function raiseJPassModal(onResult) {
+		var jpassui = document.createElement('div'); 
+		jpassui.style.width = '100%';
+		jpassui.style.height = '5%';
+		jpassui.style.background='gray';
+		jpassui.style.position='fixed';
+		jpassui.style.top='0px';
+		jpassui.style.left='0px';
+		var prompt = document.createElement('div');
+		prompt.style.top='5px';
+		prompt.style.left='5px';
+		prompt.innerHTML='Keep credentials for |URL|?';
+		var yesButton = document.createElement('button');
+		yesButton.innerHTML = 'yes';
+		yesButton.onclick = function() {
+			document.documentElement.removeChild(jpassui);
+			onResult(true);
+		};
+		var noButton = document.createElement('button');
+		noButton.innerHTML = 'no';
+		noButton.onclick = function() {
+			document.documentElement.removeChild(jpassui);
+			onResult(false);
+		};
+		jpassui.appendChild(prompt);
+		jpassui.appendChild(yesButton);
+		jpassui.appendChild(noButton);
+		document.documentElement.appendChild(jpassui);
+	}
+	
+	raiseJPassModal(function(result) {
+		alert(result);
+	});
+</script>

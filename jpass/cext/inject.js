@@ -68,13 +68,10 @@ function filterHighestRanked(collection, ranker, count) {
 function getElementInfo(element) {
     var info = {};
 
-    var attributes = [];
+    var attributes = {};
     if(element.attributes != null) {
         for(var i = 0; i < element.attributes.length; i++) {
-            attributes.push({
-                name:element.attributes[i].name,
-                value:element.attributes[i].value
-            });
+			attributes[element.attributes[i].name] = attributes[element.attributes[i].value];
         }
     }
     info.attributes = attributes;
@@ -130,45 +127,98 @@ var DOMFormFieldRanker = function(kernel) {
 	}
 }
 
-var DOMFormChanges = function(element) {
-	var nearby = collectNearby(element,10,new Set(),element.parent);
+var FormUserPassListener = function(element) {
+	var nearby = collectNearby(element,10,new Set('iframe'),element.parent);
 	var password = filterHighestRanked(nearby, new DOMFormFieldRanker(passwordKernel));
 	if(password != null) {
-		password.node.style.backgroundColor = "red";
+		console.log('found password');
+		password.node.style.backgroundColor = "#D8BFD8";
 	}
 	var username = filterHighestRanked(nearby, new DOMFormFieldRanker(usernameKernel));
 	if(username != null) {
-		username.node.style.backgroundColor = "blue";
+		console.log('found username');
+		username.node.style.backgroundColor = "#D8BFD8";
 	}
 
-	element.onsubmit = function(ev) {
+	element.addEventListener("submit", function(ev) {
+		console.log('submitting message');
 	    chrome.runtime.sendMessage({
-	        reason:"form-submit",
-	        form:getElementInfo(element),
-	        path:getElementInfoChain(element),
-	        username:getElementInfo(username.node),
-	        password:getElementInfo(password.node),
-	        usernameValue:username.node.value,
-	        passwordValue:password.node.value
+	        kind:"submit-credentials",
+			credentials: {
+				kind:"user-pass",
+				usernameValue:username.node.value,
+				passwordValue:password.node.value
+			}
 	    });
-	};
+		console.log('sent');
+	});
 };
 
-function main() {
+var FormUserPassInjector = function(element) {
+	var nearby = collectNearby(element,10,new Set('iframe'),element.parent);
+	this.password = filterHighestRanked(nearby, new DOMFormFieldRanker(passwordKernel));
+	if(this.password != null) {
+		this.password.node.style.backgroundColor = "#EE82EE";
+	}
+	this.username = filterHighestRanked(nearby, new DOMFormFieldRanker(usernameKernel));
+	if(this.username != null) {
+		this.username.node.style.backgroundColor = "#EE82EE";
+	}
+
+	chrome.runtime.sendMessage({
+		kind:"request-credentials"
+	}, function(response) {
+		if(response.length > 0) {
+			this.username.node.value = response[0].usernameValue;
+			this.password.node.value = response[0].passwordValue;
+		}
+	});
+}
+
+var JPassModal = function(onResult) {
+	var jpassui = document.createElement('div'); 
+	jpassui.style.width = '100%';
+	jpassui.style.height = '5%';
+	jpassui.style.background='gray';
+	jpassui.style.position='fixed';
+	jpassui.style.top='0px';
+	jpassui.style.left='0px';
+	jpassui.setAttribute('hidden',true);
+	document.documentElement.appendChild(jpassui);
+
+	this.closeModal() {
+		jpassui.setAttribute('hidden',true);
+	}
+	
+	this.openModal(content) {
+		jpassui.innerHTML = content;
+		jpassui.setAttribute('hidden',false);
+	}
+}
+
+function attachListeners() {
     var forms = document.getElementsByTagName("form");
-    var formChanges = [];
+	var injectors = new Map();
+    var listeners = new Map();
     for(i = 0; i < forms.length; i++) {
-        formChanges.push(new DOMFormChanges(forms[i]));
+        listeners.set(forms[i],new FormUserPassListener(forms[i]));
+		injectors.set(forms[i],new FormUserPassInjector(forms[i]));
     }
 }
 
-window.addEventListener("load",main,false);
-if(document.readyState != "complete") {
-    window.addEventListener("load",main,false);
-} else {
-    main();
-}
-
-chrome.runtime.onMessage.addListener(function(message,sender,response) {
-    console.log(message);
+var jpassmodal = new JPassModal();
+chrome.runtime.onMessage(function(message, sender, sendResponse) {
+	if(message.reason == 'prompt-user') {
+		if(message.prompt.kind == 'open') {
+			jpassmodal.openModal(message.prompt.content);
+		} else if(message.prompt.kind == 'close') {
+			jpassmodal.closeModal();
+		}
+	}
 });
+
+if(document.readyState != "complete") {
+    window.addEventListener("load",attachListeners,false);
+} else {
+    attachListeners();
+}
