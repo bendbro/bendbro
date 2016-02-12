@@ -24,6 +24,7 @@ jPassState.listen(new function() {
 });
 
 //Load credentials from dropbox.
+/*
 var client = new Dropbox.Client({key:"q29ccmrl21l9e71"});
 client.authDriver(new Dropbox.AuthDriver.ChromeExtension({receiverPath: "resources/chrome_oauth_receiver.html"}));
 client.authenticate(function(error, client) {
@@ -33,15 +34,16 @@ client.authenticate(function(error, client) {
         }
     });
 });
+*/
 
 var tabStateMap = new Map();
-function finalizeTabState(tabId) {
-	var tabState = tabStateMap.get(tabId);
-	tabStateMap.delete(tabId);
+function checkStoreCredentials(tabId) {
+	console.log('storing tab credentials');
 	
+	var tabState = tabStateMap.get(tabId);
 	var credentials = tabState.latestCredentials;
 	if(credentials != null) {
-		
+		decryptedData.push(credentials);
 	}
 }
 
@@ -49,16 +51,13 @@ chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
     if(!tabStateMap.has(tabId)) {
         tabStateMap.set(tabId,{state:"attempt-login", url:tab.url});
     }
-
-	if(message.credentials !=)
-    //console.log(tabId + " " + JSON.stringify(changeInfo));
+	checkStoreCredentials(tabId);
 });
 
 // Flushes any dom change information, saving any credentials within.
 chrome.tabs.onRemoved.addListener(function(tabId,changeInfo) {
     //console.log(tabId + " " + JSON.stringify(changeInfo));
-	
-	
+	checkStoreCredentials(tabId);
 	tabStateMap.delete(tabId);
 });
 
@@ -66,7 +65,6 @@ chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
     console.log(message);
 
     if(message.reason == "request-credentials") {
-		console.log('credentials requested');
         var tabState = tabStateMap.get(sender.tab.id);
         if(tabState != null) {
             if(tabState.state == "attempt-login" && tabState.url == sender.tab.url) {
@@ -77,7 +75,7 @@ chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
     } else if(message.reason == "submit-credentials") {
 		console.log('credentials submitted');
 		var tabState = tabStateMap.get(sender.tab.id);
-		tabState.latestCredentials = message.credentials);
+		tabState.latestCredentials = message.credentials;
     }
 });
 

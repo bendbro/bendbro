@@ -127,53 +127,41 @@ var DOMFormFieldRanker = function(kernel) {
 	}
 }
 
-var FormUserPassListener = function(element) {
+var FormUserPassHandler = function(element) {
 	var nearby = collectNearby(element,10,new Set('iframe'),element.parent);
 	var password = filterHighestRanked(nearby, new DOMFormFieldRanker(passwordKernel));
-	if(password != null) {
-		console.log('found password');
-		password.node.style.backgroundColor = "#D8BFD8";
-	}
 	var username = filterHighestRanked(nearby, new DOMFormFieldRanker(usernameKernel));
-	if(username != null) {
-		console.log('found username');
-		username.node.style.backgroundColor = "#D8BFD8";
-	}
 
-	element.addEventListener("submit", function(ev) {
-		console.log('submitting message');
-	    chrome.runtime.sendMessage({
-	        kind:"submit-credentials",
-			credentials: {
-				kind:"user-pass",
-				usernameValue:username.node.value,
-				passwordValue:password.node.value
+	if(username != null && password != null) {
+		var filledUsername = null;
+		var filledPassword = null;
+		username.node.style.backgroundColor = "#EE82EE";
+		password.node.style.backgroundColor = "#EE82EE";
+		
+		chrome.runtime.sendMessage({
+			kind:"request-credentials"
+		}, function(response) {
+			if(response.length > 0) {
+				filledUsername = response[0].usernameValue;
+				filledPassword = response[0].passwordValue;
+				username.node.value = filledUsername;
+				password.node.value = filledPassword;
 			}
-	    });
-		console.log('sent');
-	});
+		});
+		
+		element.addEventListener("change", function(ev) {
+			console.log('submitting message');
+			chrome.runtime.sendMessage({
+				kind:"submit-credentials",
+				credentials: {
+					kind:"user-pass",
+					usernameValue:username.node.value,
+					passwordValue:password.node.value
+				}
+			});
+		}, true);
+	}
 };
-
-var FormUserPassInjector = function(element) {
-	var nearby = collectNearby(element,10,new Set('iframe'),element.parent);
-	this.password = filterHighestRanked(nearby, new DOMFormFieldRanker(passwordKernel));
-	if(this.password != null) {
-		this.password.node.style.backgroundColor = "#EE82EE";
-	}
-	this.username = filterHighestRanked(nearby, new DOMFormFieldRanker(usernameKernel));
-	if(this.username != null) {
-		this.username.node.style.backgroundColor = "#EE82EE";
-	}
-
-	chrome.runtime.sendMessage({
-		kind:"request-credentials"
-	}, function(response) {
-		if(response.length > 0) {
-			this.username.node.value = response[0].usernameValue;
-			this.password.node.value = response[0].passwordValue;
-		}
-	});
-}
 
 var JPassModal = function(onResult) {
 	var jpassui = document.createElement('div'); 
@@ -186,28 +174,28 @@ var JPassModal = function(onResult) {
 	jpassui.setAttribute('hidden',true);
 	document.documentElement.appendChild(jpassui);
 
-	this.closeModal() {
+	this.closeModal = function() {
 		jpassui.setAttribute('hidden',true);
 	}
 	
-	this.openModal(content) {
+	this.openModal = function(content) {
 		jpassui.innerHTML = content;
 		jpassui.setAttribute('hidden',false);
 	}
-}
+};
 
 function attachListeners() {
     var forms = document.getElementsByTagName("form");
 	var injectors = new Map();
-    var listeners = new Map();
+    var handlers = new Map();
     for(i = 0; i < forms.length; i++) {
-        listeners.set(forms[i],new FormUserPassListener(forms[i]));
-		injectors.set(forms[i],new FormUserPassInjector(forms[i]));
+        handlers.set(forms[i],new FormUserPassHandler(forms[i]));
     }
 }
 
+/*
 var jpassmodal = new JPassModal();
-chrome.runtime.onMessage(function(message, sender, sendResponse) {
+chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
 	if(message.reason == 'prompt-user') {
 		if(message.prompt.kind == 'open') {
 			jpassmodal.openModal(message.prompt.content);
@@ -216,6 +204,7 @@ chrome.runtime.onMessage(function(message, sender, sendResponse) {
 		}
 	}
 });
+*/
 
 if(document.readyState != "complete") {
     window.addEventListener("load",attachListeners,false);
