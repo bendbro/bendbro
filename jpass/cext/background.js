@@ -79,6 +79,25 @@ chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
     }
 });
 
+function sendMessage(message) {
+	loadContent('/prompt.html',{GREETING:"Greetings",LOGMESSAGE:"INJECTED"}, function(content) {
+		console.log('To inject: ' + content);
+		chrome.tabs.query({}, function(tabs) {
+			tabs.forEach(function(tab) {
+				chrome.tabs.sendMessage(tab.id,{
+					reason:"prompt-user",
+					prompt: {
+						kind:"open",
+						content:content
+					}
+				}, function(response) {
+					console.log(response);
+				});
+			});
+		});
+	});
+}
+
 /*
         data.push(credentials);
         //TODO: synchronize with file state if it has been updated from other devices.
@@ -87,7 +106,7 @@ chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
             if(error) {
                 return alert(error);
             }
-        });
+        })
 
 function writeAll(message) {
     chrome.tabs.query({}, function(tabs) {

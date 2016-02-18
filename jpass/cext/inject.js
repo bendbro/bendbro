@@ -163,24 +163,59 @@ var FormUserPassHandler = function(element) {
 	}
 };
 
+function nodeScriptReplace(node) {
+        if ( nodeScriptIs(node) === true ) {
+                node.parentNode.replaceChild( nodeScriptClone(node) , node );
+        }
+        else {
+                var i        = 0;
+                var children = node.childNodes;
+                while ( i < children.length ) {
+                        nodeScriptReplace( children[i++] );
+                }
+        }
+
+        return node;
+}
+function nodeScriptIs(node) {
+        return node.tagName === 'SCRIPT';
+}
+function nodeScriptClone(node){
+        var script  = document.createElement("script");
+        script.text = node.innerHTML;
+        for( var i = node.attributes.length-1; i >= 0; i-- ) {
+                script.setAttribute( node.attributes[i].name, node.attributes[i].value );
+        }
+        return script;
+}
+
 var JPassModal = function(onResult) {
 	var jpassui = document.createElement('div'); 
 	jpassui.style.width = '100%';
 	jpassui.style.height = '5%';
-	jpassui.style.background='gray';
+	jpassui.style.minHeight = '75px';
 	jpassui.style.position='fixed';
 	jpassui.style.top='0px';
 	jpassui.style.left='0px';
-	jpassui.setAttribute('hidden',true);
-	document.documentElement.appendChild(jpassui);
+	jpassui.setAttribute('hidden',null);
+	var jpiframe = document.createElement('iframe');
+	jpiframe.style.width = '100%';
+	jpiframe.style.height = '100%';
+	jpiframe.setAttribute('allowtransparency',"true");
+	jpassui.appendChild(jpiframe);
+	window.onload = function() {
+		document.body.appendChild(jpassui);
+	};
 
 	this.closeModal = function() {
-		jpassui.setAttribute('hidden',true);
+		jpassui.setAttribute('hidden',null);
 	}
 	
-	this.openModal = function(content) {
-		jpassui.innerHTML = content;
-		jpassui.setAttribute('hidden',false);
+	this.openModal = function(content, messageHandle) {
+		jpassui.messageHandle = messageHandle;
+		jpiframe.src = "data:text/html;charset=utf-8," + escape(content);
+		//nodeScriptReplace(jpassui.childNodes[i]);
+		jpassui.removeAttribute('hidden');
 	}
 };
 
@@ -193,18 +228,17 @@ function attachListeners() {
     }
 }
 
-/*
 var jpassmodal = new JPassModal();
 chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
+	console.log(message);
 	if(message.reason == 'prompt-user') {
 		if(message.prompt.kind == 'open') {
-			jpassmodal.openModal(message.prompt.content);
+			jpassmodal.openModal(message.prompt.content, sendResponse);
 		} else if(message.prompt.kind == 'close') {
 			jpassmodal.closeModal();
 		}
 	}
 });
-*/
 
 if(document.readyState != "complete") {
     window.addEventListener("load",attachListeners,false);
