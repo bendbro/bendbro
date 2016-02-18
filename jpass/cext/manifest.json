@@ -1,8 +1,8 @@
 {
   "manifest_version": 2,
 
-  "name": "JPass",
-  "description": "JPass extension for password management.",
+  "name": "Bencryptio",
+  "description": "Password autofill, client side encrypted and stored on Dropbox",
   "version": "1.0",
 
   "permissions": [

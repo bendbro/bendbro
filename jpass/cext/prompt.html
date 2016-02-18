@@ -1,9 +1,13 @@
 <html>
 	<body>
-		<div class="container noback">
-			<div class="alert alert-info fade in">
-				<a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
-				<strong>Info!</strong> This alert box could indicate a neutral informative change or action.
+		<div class="container">
+			<div class="alert alert-warning fade in text-center">
+				<a id = "dismiss1" href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
+				<strong>{{prompt}}</strong>
+				<div class="btn-group" role="group">
+					<button id="keep" type="button" class="btn btn-default">Keep</button>
+					<button id="dismiss0" type="button" class="btn btn-default" data-dismiss="alert">Discard</button>
+				</div>
 			</div>
 		</div>
 	<body>
@@ -17,15 +21,34 @@
 <!-- Latest compiled and minified JavaScript -->
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
 <script>
-	console.log(this);
-	console.log(this.parent);
-	console.log('{{LOGMESSAGE}}');
-	console.log('hello');
+	addEventListener("message", function(event) {
+		closeModal();
+		console.log(event);
+		messageHandle({
+			reason:"prompt-user",
+			prompt: {
+				kind:event.data,
+			}
+		});
+	});
+
+	document.getElementById('keep').onclick = function() {
+		console.log("accepted");
+		parent.postMessage("accepted","*");
+	};
+	
+	function reject() {
+		parent.postMessage("rejected","*");
+	}
+	document.getElementById('dismiss0').onclick = reject;
+	document.getElementById('dismiss1').onclick = reject;
 </script>
 <style type="text/css">
 	body {
 		background:none;
 		background-color:none;
 	}
-	.noback {opacity:0.0 background:none transparent; }
+	.noevents {
+		pointer-events:none;
+	}
 </style>

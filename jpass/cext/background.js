@@ -1,5 +1,42 @@
 //TODO: add concept of "users" by saving differently named credential files.
 
+function promptUser(prompt, onResponse) {
+	var askingTabs = [];
+	var asking = true;
+	loadContent('/prompt.html',{
+			prompt:prompt,
+		}, function(content) {
+			chrome.tabs.query({}, function(tabs) {
+				tabs.forEach(function(tab) {
+					if(asking) {
+						chrome.tabs.sendMessage(tab.id,{
+							reason:"prompt-user",
+							prompt: {
+								kind:"open",
+								content:content
+							}
+						},function(response) {
+							if(response != null && asking) {
+								asking = false;
+								for(var id in askingTabs) {
+									chrome.tabs.sendMessage(askingTabs[id],{
+										reason:"prompt-user",
+										prompt: {
+											kind:"close"
+										}
+									});
+								}
+								onResponse(response);
+							}
+						});
+						askingTabs.push(tab.id);
+					}
+				});
+			});
+		}
+	);
+}
+
 var jPassState = new SharedState();
 jPassState.register("MasterPassword");
 jPassState.register("EncryptedData");
@@ -14,11 +51,9 @@ jPassState.listen(new function() {
         }
     }
     this.updatedEncryptedData = function(newv, oldv) {
-        console.log('e update');
         updateData();
     }
     this.updatedMasterPassword = function(newv, oldv) {
-        console.log('m update');
         updateData();
     }
 });
@@ -37,28 +72,35 @@ client.authenticate(function(error, client) {
 */
 
 var tabStateMap = new Map();
-function checkStoreCredentials(tabId) {
+function checkStoreCredentials(tabId, onChange) {
 	console.log('storing tab credentials');
 	
 	var tabState = tabStateMap.get(tabId);
 	var credentials = tabState.latestCredentials;
 	if(credentials != null) {
 		decryptedData.push(credentials);
+        client.writeFile("credentials.json",sjcl.encrypt(jPassState.getMasterPassword(),data),function(error,stat) {
+            if(error) {
+                console.log(error);
+            }
+        });
 	}
 }
 
 chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
-    if(!tabStateMap.has(tabId)) {
-        tabStateMap.set(tabId,{state:"attempt-login", url:tab.url});
-    }
-	checkStoreCredentials(tabId);
+	if(changeInfo.status == 'complete') {
+		console.log(changeInfo);
+		promptUser('Do action for ' + extractDomain(tab.url) + '?', function(response){
+			console.log(response);
+		});
+	}
+	//checkStoreCredentials(tabId);
 });
 
 // Flushes any dom change information, saving any credentials within.
 chrome.tabs.onRemoved.addListener(function(tabId,changeInfo) {
-    //console.log(tabId + " " + JSON.stringify(changeInfo));
-	checkStoreCredentials(tabId);
-	tabStateMap.delete(tabId);
+	//checkStoreCredentials(tabId);
+	//tabStateMap.delete(tabId);
 });
 
 chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
@@ -76,27 +118,10 @@ chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
 		console.log('credentials submitted');
 		var tabState = tabStateMap.get(sender.tab.id);
 		tabState.latestCredentials = message.credentials;
-    }
-});
+    } else if(message.reason == "prompt-user") {
 
-function sendMessage(message) {
-	loadContent('/prompt.html',{GREETING:"Greetings",LOGMESSAGE:"INJECTED"}, function(content) {
-		console.log('To inject: ' + content);
-		chrome.tabs.query({}, function(tabs) {
-			tabs.forEach(function(tab) {
-				chrome.tabs.sendMessage(tab.id,{
-					reason:"prompt-user",
-					prompt: {
-						kind:"open",
-						content:content
-					}
-				}, function(response) {
-					console.log(response);
-				});
-			});
-		});
-	});
-}
+	}
+});
 
 /*
         data.push(credentials);

@@ -197,10 +197,14 @@ var JPassModal = function(onResult) {
 	jpassui.style.position='fixed';
 	jpassui.style.top='0px';
 	jpassui.style.left='0px';
+	jpassui.style.zIndex = 99999999;
 	jpassui.setAttribute('hidden',null);
 	var jpiframe = document.createElement('iframe');
 	jpiframe.style.width = '100%';
 	jpiframe.style.height = '100%';
+	//jpiframe.style.pointerEvents = 'none';
+	jpiframe.setAttribute('frameBorder','0');
+	jpiframe.setAttribute('scrolling','no');
 	jpiframe.setAttribute('allowtransparency',"true");
 	jpassui.appendChild(jpiframe);
 	window.onload = function() {
@@ -211,11 +215,23 @@ var JPassModal = function(onResult) {
 		jpassui.setAttribute('hidden',null);
 	}
 	
+	var closeModal = this.closeModal;
 	this.openModal = function(content, messageHandle) {
 		jpassui.messageHandle = messageHandle;
 		jpiframe.src = "data:text/html;charset=utf-8," + escape(content);
 		//nodeScriptReplace(jpassui.childNodes[i]);
 		jpassui.removeAttribute('hidden');
+		
+		addEventListener("message", function(event) {
+			closeModal();
+			console.log(event);
+			messageHandle({
+				reason:"prompt-user",
+				prompt: {
+					kind:event.data,
+				}
+			});
+		});
 	}
 };
 
@@ -238,6 +254,7 @@ chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
 			jpassmodal.closeModal();
 		}
 	}
+	return true;
 });
 
 if(document.readyState != "complete") {
