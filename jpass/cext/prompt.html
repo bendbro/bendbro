@@ -2,11 +2,11 @@
 	<body>
 		<div class="container">
 			<div class="alert alert-warning fade in text-center">
-				<a id = "dismiss1" href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
-				<strong>{{prompt}}</strong>
+				<a id = "dismiss" href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
+				<strong id="prompt"></strong>
 				<div class="btn-group" role="group">
 					<button id="keep" type="button" class="btn btn-default">Keep</button>
-					<button id="dismiss0" type="button" class="btn btn-default" data-dismiss="alert">Discard</button>
+					<button id="reject" type="button" class="btn btn-default" data-dismiss="alert">Discard</button>
 				</div>
 			</div>
 		</div>
@@ -20,29 +20,7 @@
 <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css" integrity="sha384-fLW2N01lMqjakBkx3l/M9EahuwpSfeNvV63J5ezn3uZzapT0u7EYsXMjQV+0En5r" crossorigin="anonymous">
 <!-- Latest compiled and minified JavaScript -->
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
-<script>
-	addEventListener("message", function(event) {
-		closeModal();
-		console.log(event);
-		messageHandle({
-			reason:"prompt-user",
-			prompt: {
-				kind:event.data,
-			}
-		});
-	});
-
-	document.getElementById('keep').onclick = function() {
-		console.log("accepted");
-		parent.postMessage("accepted","*");
-	};
-	
-	function reject() {
-		parent.postMessage("rejected","*");
-	}
-	document.getElementById('dismiss0').onclick = reject;
-	document.getElementById('dismiss1').onclick = reject;
-</script>
+<script src="/prompt.js"></script>
 <style type="text/css">
 	body {
 		background:none;

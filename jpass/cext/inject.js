@@ -139,26 +139,28 @@ var FormUserPassHandler = function(element) {
 		password.node.style.backgroundColor = "#EE82EE";
 		
 		chrome.runtime.sendMessage({
-			kind:"request-credentials"
+			reason:"request-credentials"
 		}, function(response) {
-			if(response.length > 0) {
-				filledUsername = response[0].usernameValue;
-				filledPassword = response[0].passwordValue;
+			console.log(response);
+			if(response.credentials) {
+				filledUsername = response.credentials.usernameValue;
+				filledPassword = response.credentials.passwordValue;
 				username.node.value = filledUsername;
 				password.node.value = filledPassword;
 			}
 		});
 		
 		element.addEventListener("change", function(ev) {
-			console.log('submitting message');
-			chrome.runtime.sendMessage({
-				kind:"submit-credentials",
-				credentials: {
-					kind:"user-pass",
-					usernameValue:username.node.value,
-					passwordValue:password.node.value
-				}
-			});
+			if(username.node.value != "" && password.node.value != "") {
+				chrome.runtime.sendMessage({
+					reason:"submit-credentials",
+					credentials: {
+						kind:"user-pass",
+						usernameValue:username.node.value,
+						passwordValue:password.node.value
+					}
+				});
+			}
 		}, true);
 	}
 };
@@ -197,45 +199,59 @@ var JPassModal = function(onResult) {
 	jpassui.style.position='fixed';
 	jpassui.style.top='0px';
 	jpassui.style.left='0px';
-	jpassui.style.zIndex = 99999999;
+	jpassui.style.zIndex = Number.MAX_SAFE_INTEGER - 1000; //ample space for additional extensions
 	jpassui.setAttribute('hidden',null);
 	var jpiframe = document.createElement('iframe');
 	jpiframe.style.width = '100%';
 	jpiframe.style.height = '100%';
-	//jpiframe.style.pointerEvents = 'none';
 	jpiframe.setAttribute('frameBorder','0');
 	jpiframe.setAttribute('scrolling','no');
 	jpiframe.setAttribute('allowtransparency',"true");
+	jpiframe.src = chrome.extension.getURL('prompt.html');
 	jpassui.appendChild(jpiframe);
-	window.onload = function() {
-		document.body.appendChild(jpassui);
-	};
-
+	document.body.appendChild(jpassui);
+	
 	this.closeModal = function() {
+		console.log('close');
 		jpassui.setAttribute('hidden',null);
 	}
 	
 	var closeModal = this.closeModal;
 	this.openModal = function(content, messageHandle) {
+		console.log('open');
 		jpassui.messageHandle = messageHandle;
-		jpiframe.src = "data:text/html;charset=utf-8," + escape(content);
-		//nodeScriptReplace(jpassui.childNodes[i]);
+		jpiframe.contentWindow.postMessage(content,"*");
 		jpassui.removeAttribute('hidden');
-		
 		addEventListener("message", function(event) {
 			closeModal();
-			console.log(event);
-			messageHandle({
-				reason:"prompt-user",
-				prompt: {
-					kind:event.data,
-				}
-			});
+			if(event.data != "dismissed") {
+				console.log('event!');
+				console.log(event);
+				messageHandle({
+					reason:"prompt-user",
+					prompt: {
+						kind:event.data,
+					}
+				});
+			}
 		});
 	}
 };
 
 function attachListeners() {
+	var jpassmodal = new JPassModal();
+	chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
+		console.log(message);
+		if(message.reason == 'prompt-user') {
+			if(message.prompt.kind == 'open') {
+				jpassmodal.openModal(message.prompt.content, sendResponse);
+			} else if(message.prompt.kind == 'close') {
+				jpassmodal.closeModal();
+			}
+		}
+		return true;
+	});
+	
     var forms = document.getElementsByTagName("form");
 	var injectors = new Map();
     var handlers = new Map();
@@ -243,19 +259,6 @@ function attachListeners() {
         handlers.set(forms[i],new FormUserPassHandler(forms[i]));
     }
 }
-
-var jpassmodal = new JPassModal();
-chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
-	console.log(message);
-	if(message.reason == 'prompt-user') {
-		if(message.prompt.kind == 'open') {
-			jpassmodal.openModal(message.prompt.content, sendResponse);
-		} else if(message.prompt.kind == 'close') {
-			jpassmodal.closeModal();
-		}
-	}
-	return true;
-});
 
 if(document.readyState != "complete") {
     window.addEventListener("load",attachListeners,false);

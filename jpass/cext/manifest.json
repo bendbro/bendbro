@@ -38,7 +38,9 @@
   }],
 
   "web_accessible_resources": [
-    "resources/chrome_oauth_receiver.html"
+    "resources/chrome_oauth_receiver.html",
+	"prompt.html",
+	"prompt.js"
   ],
 
   "icons": {
