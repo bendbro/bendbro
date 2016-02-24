@@ -1,5 +1,5 @@
 var SharedState = function() {
-    this.listeners = [];
+    this.listeners = new Set();
     this.data = {};
 
     this.register = function(name) {
@@ -13,13 +13,30 @@ var SharedState = function() {
             this.listeners.forEach(function(listener) {
                 var listenerCallback = listener["updated"+name];
                 if(listenerCallback != null && listenerCallback != undefined) {
-                    listenerCallback.call(newValue,oldValue);
+                    listenerCallback.call(name,newValue,oldValue);
                 }
             });
         };
     };
 
-    this.listen = function(listen) {
-        this.listeners.push(listen);
+    this.listen = function(listener) {
+        this.listeners.add(listener);
     }
+	
+	this.mute = function(listener) {
+		this.listeners.delete(listener);
+	}
 };
+
+function waitForUpdates(sharedState, names, onReady) {
+	var nameMap = new Map();
+	
+	sharedState.listen(function(name,newValue,oldValue) {
+		if(names.indexOf(name) != -1) {
+			nameMap.set(name, newValue);
+			if(nameMap.values.length == names.length) {
+				onReady(nameMap);
+			}
+		}
+	});
+}

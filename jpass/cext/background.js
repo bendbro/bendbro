@@ -2,6 +2,56 @@
 //TODO: multiple accounts for same domain via form autocomplete off and append <datalist>
 //TODO: add layer between writing to db and adding a new credential.
 
+chrome.storage.sync.set({'value':'abc123','value2':'value2item'}, function() {
+	chrome.storage.sync.get(['value','value2'], function(item) {
+		console.log(item);
+	});
+});
+
+var state = new SharedState();
+state.register("MasterPassword");
+state.register("RemoteData");
+state.register("RemoteDataStats");
+
+//Authenticate with dropbox.
+var client = new Dropbox.Client({key:"q29ccmrl21l9e71"});
+client.authDriver(new Dropbox.AuthDriver.ChromeExtension({receiverPath: "resources/chrome_oauth_receiver.html"}));
+
+client.authenticate(function(error, client) {
+    if(error) {
+		console.log('Dropbox client not authenticated!');
+	} else {
+		//prefetch remote dropbox data.
+		client.stat("credentials.json",function(error,stats) {
+			if(error) {
+				console.log("Error reading file statistics.");
+			} else {
+				state.setRemoteDataStats(stats);
+				client.readFile("credentials.json",function(error, fileData) {
+					if(!error) {
+						jPassState.setEncryptedData(fileData);
+					}
+				});
+			}
+		});
+	}
+});
+
+
+function findCredentialsFor(credentialList, url) {
+    var credentialsFound = null;
+    credentialList.forEach(function(credentials) {
+        if(extractRootDomain(credentials.url) == extractRootDomain(url)) {
+            credentialsFound = credentials;
+        }
+    });
+    return credentialsFound;
+}
+
+function attemptSave(credentials) {
+	
+}
+
 function promptUser(prompt, onResponse) {
 	var askingTabs = [];
 	var asking = true;
@@ -34,9 +84,6 @@ function promptUser(prompt, onResponse) {
 	});
 }
 
-var jPassState = new SharedState();
-jPassState.register("MasterPassword");
-jPassState.register("EncryptedData");
 
 //TODO:remove
 jPassState.setMasterPassword('abc123');
@@ -62,23 +109,12 @@ jPassState.listen(new function() {
     }
 });
 
-//Load credentials from dropbox.
-var client = new Dropbox.Client({key:"q29ccmrl21l9e71"});
-client.authDriver(new Dropbox.AuthDriver.ChromeExtension({receiverPath: "resources/chrome_oauth_receiver.html"}));
-client.authenticate(function(error, client) {
-    client.readFile("credentials.json",function(error, fileData) {
-        if(!error) {
-            jPassState.setEncryptedData(fileData);
-        }
-    });
-});
-
 var tabStateMap = new Map();
 
 var prompts = [];
 var promptLoop = function() {
 	if(prompts.length > 0) {
-		var prompting = prompts[prompts.length-1];
+		var prompting = prompts.pop();
 		promptUser('Keep credentials for ' + prompting.url + '?', function(response){
 			if(response.prompt.kind == "accepted") {
 				decryptedData.push(prompting.credentials);
@@ -88,8 +124,6 @@ var promptLoop = function() {
 					}
 				});
 			}
-			prompts.pop();
-			console.log(prompts.length);
 			promptLoop();
 		});
 	}
