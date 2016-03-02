@@ -2,6 +2,27 @@
 //TODO: multiple accounts for same domain via form autocomplete off and append <datalist>
 //TODO: add layer between writing to db and adding a new credential.
 
+function cTest() {
+
+    var b;
+    function a() {
+        b = Math.random();
+        var a = Math.random();
+        
+        return function() {
+            console.log(a + ' ' + b);
+        };
+    }
+
+    var inner1 = a();
+    var inner2 = a();
+
+    inner1();
+    inner2();
+}
+
+cTest();
+
 chrome.storage.sync.set({'value':'abc123','value2':'value2item'}, function() {
 	chrome.storage.sync.get(['value','value2'], function(item) {
 		console.log(item);
@@ -14,9 +35,10 @@ state.register("RemoteData");
 state.register("RemoteDataStats");
 
 //Authenticate with dropbox.
-var client = new Dropbox.Client({key:"q29ccmrl21l9e71"});
-client.authDriver(new Dropbox.AuthDriver.ChromeExtension({receiverPath: "resources/chrome_oauth_receiver.html"}));
+//var client = new Dropbox.Client({key:"q29ccmrl21l9e71"});
+//client.authDriver(new Dropbox.AuthDriver.ChromeExtension({receiverPath: "resources/chrome_oauth_receiver.html"}));
 
+/*
 client.authenticate(function(error, client) {
     if(error) {
 		console.log('Dropbox client not authenticated!');
@@ -36,99 +58,91 @@ client.authenticate(function(error, client) {
 		});
 	}
 });
+*/
 
-
-function findCredentialsFor(credentialList, url) {
-    var credentialsFound = null;
-    credentialList.forEach(function(credentials) {
+var credentials = [];
+function findCredentialForUrl(url) {
+    //TODO: dropbox, caching
+    var credentialFound = null;
+    credentials.forEach(function(credential) {
         if(extractRootDomain(credentials.url) == extractRootDomain(url)) {
-            credentialsFound = credentials;
+            credentialFound = credential;
         }
     });
-    return credentialsFound;
+    return credentialFound;
 }
 
-function attemptSave(credentials) {
-	
+function storeCredential(credentials) {
+    //TODO: dropbox, caching
+    credentials.push(credentials);
 }
 
-function promptUser(prompt, onResponse) {
-	var askingTabs = [];
-	var asking = true;
-	chrome.tabs.query({}, function(tabs) {
-		tabs.forEach(function(tab) {
-			if(asking) {
-				chrome.tabs.sendMessage(tab.id,{
-					reason:"prompt-user",
-					prompt: {
-						kind:"open",
-						content:prompt
-					}
-				},function(response) {
-					if(response != null && asking) {
-						asking = false;
-						for(var id in askingTabs) {
-							chrome.tabs.sendMessage(askingTabs[id],{
-								reason:"prompt-user",
-								prompt: {
-									kind:"close"
-								}
-							});
-						}
-						onResponse(response);
-					}
-				});
-				askingTabs.push(tab.id);
-			}
-		});
-	});
-}
-
-
-//TODO:remove
-jPassState.setMasterPassword('abc123');
-
-//Add hooks for changes to data.
-var decryptedData = [];
-jPassState.listen(new function() {
-    function updateData() {
-        if(jPassState.getMasterPassword() != null && jPassState.getEncryptedData() != null) {
-			var rawData = sjcl.decrypt(jPassState.getMasterPassword(), jPassState.getEncryptedData());
-			console.log(rawData);
-            decryptedData = JSON.parse(rawData);
-            console.log(decryptedData);
-        }
-    }
-    this.updatedEncryptedData = function(newv, oldv) {
-		console.log('edata');
-        updateData();
-    }
-    this.updatedMasterPassword = function(newv, oldv) {
-		console.log('mdata');
-        updateData();
-    }
-});
-
-var tabStateMap = new Map();
 
 var prompts = [];
-var promptLoop = function() {
-	if(prompts.length > 0) {
-		var prompting = prompts.pop();
-		promptUser('Keep credentials for ' + prompting.url + '?', function(response){
-			if(response.prompt.kind == "accepted") {
-				decryptedData.push(prompting.credentials);
-				client.writeFile("credentials.json",sjcl.encrypt(jPassState.getMasterPassword(),decryptedData),function(error,stat) {
-					if(error) {
-						console.log(error);
-					}
-				});
-			}
-			promptLoop();
-		});
-	}
-};
+var promptingTabIds = new Set();
+function promptUser(message, onResponse) {
+    //Queue up a prompt
+    if(message && onResponse) {
+        console.log('Adding prompt');
+        prompts.push({message:message,onResponse:onResponse});
+    }
+    
+    if(promptingTabIds.size == 0 && prompts.length > 0) {
+        var userPrompt = prompts.pop();
+        var expired = false;
 
+        console.log('Firing prompt ' + JSON.stringify(userPrompt));
+        var onUpdateHandler = null;
+
+        //When a reponse is made, closes the active prompt
+        function onResponseWrapper(response) {
+            if(!expired && response) {
+                expired = true;
+                console.log('Killing tabs');
+                console.log(response);
+                promptingTabIds.forEach(function(tabId) {
+                    chrome.tabs.sendMessage(tabId, {
+                        reason:'prompt-user',
+                        prompt: {
+                            kind:'close'
+                        }
+                    });
+                });
+                chrome.tabs.onUpdated.removeListener(onUpdateHandler);
+                promptingTabIds = new Set();
+                userPrompt.onResponse(response);
+                promptUser(); //Issue the next prompt when last is finished
+            }
+        }
+
+        //When a tab is updated, pulls up the active prompt
+        onUpdateHandler = function(tabId,changeInfo,tab) {
+            if(!expired) {
+                console.log('Updating tab');
+                promptingTabIds.add(tabId);
+                chrome.tabs.sendMessage(tabId, {
+                    reason:'prompt-user',
+                    prompt:{
+                        kind:'open',
+                        content:userPrompt.message
+                    }
+                },onResponseWrapper);
+            }
+        }
+
+        chrome.tabs.query({}, function(tabs) {
+            tabs.forEach(function(tab) {
+                onUpdateHandler(tab.id);
+            });            
+        });
+
+        chrome.tabs.onUpdated.addListener(onUpdateHandler);
+    }
+}
+
+
+//var rawData = sjcl.decrypt(jPassState.getMasterPassword(), jPassState.getEncryptedData());
+var tabStateMap = new Map();
 chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
 	var tabState = tabStateMap.get(tabId);
 	if(tabState == null) {
@@ -142,19 +156,15 @@ chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
 	var latestCredentials = tabState.latestCredentials;	
 	if(latestCredentials != null) {
 		tabState.latestCredentials = null;
-		prompts.push({
-			tabState:tabState,
-			url:extractDomain(tab.url),
-			credentials:latestCredentials
-		});
+                promptUser('Save credentials for ' + extractDomain(tab.url) + '?', function(response) {
+                    console.log(response);
+                });
 	}
 	
 	if(tabState.url != tab.url) {
 		tabState.url = tab.url;
 		tabState.latestCredentials = null;
 	}
-	
-	promptLoop();
 });
 
 // Flushes any dom change information, saving any credentials within.
@@ -171,20 +181,19 @@ chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
 
     if(message.reason == "request-credentials") {
         var tabState = tabStateMap.get(sender.tab.id);
-		console.log(decryptedData);
-        var credentials = findCredentialsFor(decryptedData,sender.tab.url);
-		console.log(credentials);
-		if(credentials != null) {
-			console.log('sending');
-			sendResponse({
-				reason:"fill-credentials",
-				credentials:credentials
-			})
-		}
+        var credentials = findCredentialForUrl(sender.tab.url);
+        console.log(credentials);
+        if(credentials != null) {
+	    console.log('sending');
+	    sendResponse({
+		reason:"fill-credentials",
+		credentials:credentials
+	    });
+	}
     } else if(message.reason == "submit-credentials") {
-		var tabState = tabStateMap.get(sender.tab.id);
-		message.credentials.url = sender.tab.url;
-		tabState.latestCredentials = message.credentials;
+        var tabState = tabStateMap.get(sender.tab.id);
+        message.credentials.url = sender.tab.url;
+        tabState.latestCredentials = message.credentials;
     }
 });
 
