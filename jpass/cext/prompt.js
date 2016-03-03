@@ -1,6 +1,6 @@
 addEventListener("message", function(event) {
-	var message = event.data;
-	document.getElementById("prompt").innerHTML = message;
+    var message = event.data;
+    document.getElementById("prompt").innerHTML = message;
 });
 document.getElementById('keep').onclick = function() {
 	parent.postMessage('{"sender":"jpass","content":"accepted"}',"*");

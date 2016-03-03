@@ -26,7 +26,7 @@
       "resources/bendbro/Url.js",
       "resources/bendbro/Password.js",
       "resources/bendbro/SharedState.js",
-	  "resources/bendbro/LoadContent.js",
+      "resources/bendbro/LoadContent.js",
       "background.js"
     ]
   },

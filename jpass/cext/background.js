@@ -65,16 +65,16 @@ function findCredentialForUrl(url) {
     //TODO: dropbox, caching
     var credentialFound = null;
     credentials.forEach(function(credential) {
-        if(extractRootDomain(credentials.url) == extractRootDomain(url)) {
+        if(extractRootDomain(extractDomain(credential.url)) == extractRootDomain(extractDomain(url))) {
             credentialFound = credential;
         }
     });
     return credentialFound;
 }
 
-function storeCredential(credentials) {
+function storeCredential(credential) {
     //TODO: dropbox, caching
-    credentials.push(credentials);
+    credentials.push(credential);
 }
 
 
@@ -99,7 +99,6 @@ function promptUser(message, onResponse) {
             if(!expired && response) {
                 expired = true;
                 console.log('Killing tabs');
-                console.log(response);
                 promptingTabIds.forEach(function(tabId) {
                     chrome.tabs.sendMessage(tabId, {
                         reason:'prompt-user',
@@ -141,8 +140,9 @@ function promptUser(message, onResponse) {
 }
 
 
-//var rawData = sjcl.decrypt(jPassState.getMasterPassword(), jPassState.getEncryptedData());
 var tabStateMap = new Map();
+
+//Listen for updating tabs.
 chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
 	var tabState = tabStateMap.get(tabId);
 	if(tabState == null) {
@@ -157,7 +157,14 @@ chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
 	if(latestCredentials != null) {
 		tabState.latestCredentials = null;
                 promptUser('Save credentials for ' + extractDomain(tab.url) + '?', function(response) {
+                    console.log('Got response');
                     console.log(response);
+
+                    if(response.prompt.kind == "accepted") {
+                        console.log('Storing!');
+                        console.log(latestCredentials);
+                        storeCredential(latestCredentials);
+                    }
                 });
 	}
 	
@@ -167,24 +174,34 @@ chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
 	}
 });
 
-// Flushes any dom change information, saving any credentials within.
+//Listen for closing tabs.
 chrome.tabs.onRemoved.addListener(function(tabId,changeInfo) {
-	promptUser('Do action for ' + extractDomain(tab.url) + '?', function(response){
-		console.log(response);
-	});
-	//checkStoreCredentials(tabId);
-	//tabStateMap.delete(tabId);
+    var tabState = tabStateMap.get(tabId);
+
+    var latestCredentials = tagState.latestCredentials;
+    if(latestCredentials != null) {
+        tabState.latestCredentials = null;
+	promptUser('Save credentials for ' + extractDomain(tab.url) + '?', function(response){
+            console.log('Got response!');
+            console.log(response);
+
+            if(response.prompt.kind == "accepted") {
+                storeCredential(latestCredentials);
+            }
+        });
+    }
+	
+    tabStateMap.delete(tabId);
 });
 
+//Listen for requests from content scripts
 chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
-    console.log(message);
-
     if(message.reason == "request-credentials") {
-        var tabState = tabStateMap.get(sender.tab.id);
         var credentials = findCredentialForUrl(sender.tab.url);
+        console.log('Finding credentials for ' + sender.tab.url);
         console.log(credentials);
         if(credentials != null) {
-	    console.log('sending');
+	    console.log('Sending credentials!');
 	    sendResponse({
 		reason:"fill-credentials",
 		credentials:credentials

@@ -1,5 +1,3 @@
-console.log('content page script');
-
 function textifyAttributes(element) {
 	var textified = "?";
 	if(element.nodeName != null) {
@@ -33,7 +31,8 @@ function collectNearby(element,maxDepth,excludedTypes,comingFrom,depth) {
 			for(var i = 0; i < element.childNodes.length; i++) {
 				var child = element.childNodes[i];
 				if(child != comingFrom && !excludedTypes.has(child.nodeName)) {
-					collectNearby(child,maxDepth,excludedTypes,element,depth+1).forEach(function(item) {
+					var nearby = collectNearby(child,maxDepth,excludedTypes,element,depth+1)
+                                        nearby.forEach(function(item) {
 						collected.push(item);
 					});
 				}
@@ -43,7 +42,8 @@ function collectNearby(element,maxDepth,excludedTypes,comingFrom,depth) {
 		var parent = element.parentNode;
 		if(parent != null) {
 			if(parent != comingFrom && !excludedTypes.has(parent.nodeName)) {
-				collectNearby(parent,maxDepth,excludedTypes,element,depth+1).forEach(function(item) {
+				var nearby = collectNearby(parent,maxDepth,excludedTypes,element,depth+1)
+                                nearby.forEach(function(item) {
 					collected.push(item);
 				});
 			}
@@ -93,23 +93,27 @@ function getElementInfoChain(element) {
     return chain;
 }
 
-var usernameKernel = {name:{
-						id:2.0,
-						name:1.0,
-						type:2.0,
-					},value:{
-						username:1.0,
-						user:1.0,
-						email:1.0
-					}};
-var passwordKernel = {name:{
-						id:2.0,
-						name:1.0,
-						type:2.0
-					},value:{
-						password:1.0,
-						pass:1.0,
-					}};
+var usernameKernel = {
+    name:{
+        id:2.0,
+        name:1.0,
+        type:2.0,
+    },value:{
+        username:1.0,
+        user:1.0,
+        email:1.0
+    }
+};
+var passwordKernel = {
+    name:{
+	id:2.0,
+	name:1.0,
+	type:2.0
+    },value:{
+	password:1.0,
+	pass:1.0,
+    }
+};
 var DOMFormFieldRanker = function(kernel) {
 	this.rank = function(collected) {
 		var rank = -99999999;
@@ -128,9 +132,13 @@ var DOMFormFieldRanker = function(kernel) {
 }
 
 var FormUserPassHandler = function(element) {
-	var nearby = collectNearby(element,10,new Set('iframe'),element.parent);
+	var nearby = collectNearby(element,10,new Set('iframe'),element.parentNode);
 	var password = filterHighestRanked(nearby, new DOMFormFieldRanker(passwordKernel));
 	var username = filterHighestRanked(nearby, new DOMFormFieldRanker(usernameKernel));
+
+        console.log(element);
+        console.log(password);
+        console.log(username);
 
 	if(username != null && password != null) {
 		var filledUsername = null;
@@ -138,6 +146,7 @@ var FormUserPassHandler = function(element) {
 		username.node.style.backgroundColor = "#EE82EE";
 		password.node.style.backgroundColor = "#EE82EE";
 		
+                console.log('Requesting credentials!');
 		chrome.runtime.sendMessage({
 			reason:"request-credentials"
 		}, function(response) {
@@ -192,24 +201,26 @@ var JPassModal = function(onResult) {
 	
 	var closeModal = this.closeModal;
 	this.openModal = function(content, messageHandle) {
-		console.log('open');
-		jpassui.messageHandle = messageHandle;
-		jpiframe.contentWindow.postMessage(content,"*");
-		jpassui.removeAttribute('hidden');
-		addEventListener("message", function(event) {
-			closeModal();
-                        var message = JSON.parse(event.data);
-			if(message && message.sender == 'jpass' && message.content != 'dismissed') {
-				console.log(message);
-                                messageHandle({
-					reason:"prompt-user",
-					prompt: {
-						kind:message.content,
-					}
-				});
-			}
-		});
-	}
+	    console.log('open');
+	    jpassui.messageHandle = messageHandle;
+	    jpiframe.contentWindow.postMessage(content,"*");
+	    jpassui.removeAttribute('hidden');
+	    addEventListener("message", function(event) {
+                var message = JSON.parse(event.data);
+                if(message && message.sender == 'jpass') {
+                    closeModal();
+                    if(message.content != 'dismissed') {
+                        console.log(message);
+                        messageHandle({
+                            reason:"prompt-user",
+                            prompt: {
+                                kind:message.content,
+                            }
+                        });
+                    }
+                }
+            });
+        }
 };
 
 function attachListeners() {
