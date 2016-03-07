@@ -141,8 +141,8 @@ var FormUserPassHandler = function(element) {
         console.log(username);
 
 	if(username != null && password != null) {
-		var filledUsername = null;
-		var filledPassword = null;
+		var filledUsername = "";
+		var filledPassword = "";
 		username.node.style.backgroundColor = "#EE82EE";
 		password.node.style.backgroundColor = "#EE82EE";
 		
@@ -150,6 +150,7 @@ var FormUserPassHandler = function(element) {
 		chrome.runtime.sendMessage({
 			reason:"request-credentials"
 		}, function(response) {
+                        console.log('Got a response');
 			console.log(response);
 			if(response.credentials) {
 				filledUsername = response.credentials.usernameValue;
@@ -160,7 +161,7 @@ var FormUserPassHandler = function(element) {
 		});
 		
 		element.addEventListener("change", function(ev) {
-			if(username.node.value != "" && password.node.value != "") {
+			if(username.node.value != filledUsername && password.node.value != filledUsername) {
 				chrome.runtime.sendMessage({
 					reason:"submit-credentials",
 					credentials: {
