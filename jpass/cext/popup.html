@@ -2,6 +2,7 @@
 <html>
 <head>
     <title>Ben's Encryption</title>
+</head>
 <body>
 <!-- Modal -->
 <div id="masterPasswordInput" class="modal fade" role="dialog">
@@ -13,28 +14,51 @@
                 <h4 class="modal-title">Unlock credentials</h4>
             </div>
             <div class="modal-body">
-                <form>
-                    <input id="masterPassword" type="text" name="master password">
-                    <button id="unlockTrigger" type="button" class="btn btn-default" data-dismiss="modal">unlock</button>
+                <form role="form">
+                    <div class="form-group">
+                        <input id="userName" type="text" name="username" placeholder="username">
+                        <input id="masterPassword" type="password" name="master password" placeholder="password">
+                        <button id="unlockTrigger" type="button" class="btn btn-default btn-sm" data-dismiss="modal">Login</button>
+                    </div>
                 </form>
             </div>
         </div>
     </div>
 </div>
-<div class="container">
+<div class="container-fluid">
     <div class="row">
-        <form>
-            <button class="btn-primary" id="inputMasterPassword" type="button">unlock</button>
-        </form>
+        <div class="col-xs-12 h2 text-center">
+            Bencryptio
+        </div>
+    </div>
+    <hr>
+    <div class="row">
+        <div class="col-xs-1 h4 vcenter"><img src="resources/images/testicon.gif" width="20" height="20"></div>
+        <div class="col-xs-7 h4 vcenter" id="selectedUser">Nobody's here</div>
+        <div class="col-xs-2 h4 vcetner">
+            <button class="btn btn-default btn-xs" data-toggle="modal" href="#masterPasswordInput">Sign in</button>
+        </div>
+    </div>
+    <br>
+    <br>
+    <div class="row">
+        <div class="col-xs-4 vcenter text-center">save</div>
+        <div class="col-xs-4 vcenter text-center">edit</div>
+        <div class="col-xs-4 vcetner text-center">about</div>
     </div>
 </div>
 </body>
-</head>
 </html>
 <style>
 body {
-    min-width:300px;
-    min-height:150px;
+    width:250px;
+    height:250px;
+}
+
+.vcenter {
+    display: inline-block;
+    vertical-align: middle;
+    float: none;
 }
 </style>
 <link rel="stylesheet" href="resources/bootstrap.min.css">

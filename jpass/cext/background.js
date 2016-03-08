@@ -1,12 +1,14 @@
-//TODO: add concept of "users" by saving differently named credential files.
-//TODO: multiple accounts for same domain via form autocomplete off and append <datalist>
-//TODO: add layer between writing to db and adding a new credential.
+//TODO context menu highlight (save note)
+//TODO context menu right click (generate random)
+//TODO export credentials + scjl + node.app for archiving, decryption in desktop, or on website
+//TODO webpage access
 
 var credentials = [];
 var lastRemoteLoad = 0;
 
 var state = new SharedState();
 state.register("MasterPassword");
+state.register("UserName");
 
 //Authenticate with dropbox.
 var client = new Dropbox.Client({key:"q29ccmrl21l9e71"});
@@ -16,7 +18,7 @@ client.authenticate(function(error, client) {});
 function loadRemoteCredentials(onLoad) {
     var masterPassword = state.getMasterPassword();
     if(client.isAuthenticated() && masterPassword) {
-        client.readFile('credentials.json', function(error, data) {
+        client.readFile(state.getUserName()+'/credentials.json', function(error, data) {
             if(!error) {
                 var remoteCredentials = JSON.parse(sjcl.decrypt(masterPassword,data));
                 console.log("Remote credentials");
@@ -65,7 +67,7 @@ function saveRemoteCredentials() {
         loadRemoteCredentials(function(remote) {
             mergeRemoteCredentials(remote);
             var encryptedCredentials = sjcl.encrypt(masterPassword, JSON.stringify(credentials));
-            client.writeFile('credentials.json',encryptedCredentials);
+            client.writeFile(state.getUserName()+'/credentials.json',encryptedCredentials);
         });
     }  
 }

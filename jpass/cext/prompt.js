@@ -3,11 +3,11 @@ addEventListener("message", function(event) {
     document.getElementById("prompt").innerHTML = message;
 });
 document.getElementById('keep').onclick = function() {
-	parent.postMessage('{"sender":"jpass","content":"accepted"}',"*");
+    parent.postMessage('{"sender":"jpass","content":"accepted"}',"*");
 };
 document.getElementById('reject').onclick = function() {
-	parent.postMessage('{"sender":"jpass","content":"rejected"}',"*");
+    parent.postMessage('{"sender":"jpass","content":"rejected"}',"*");
 };
 document.getElementById('dismiss').onclick = function() {
-	parent.postMessage('{"sender":"jpass","content":"dismissed"}',"*");
+    parent.postMessage('{"sender":"jpass","content":"dismissed"}',"*");
 };

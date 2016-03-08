@@ -1,13 +1,25 @@
 chrome.runtime.getBackgroundPage(function(background) {
-    if(background.state.getMasterPassword() == null) {
+    function setSelectedUser() {
+        document.getElementById("selectedUser").innerHTML = background.state.getUserName() || "Nobody's here";
+    };
+
+    if(document.readyState != 'complete') {
+        document.body.onload = setSelectedUser();
+    } else {
+        setSelectedUser();
+    }
+
+    if(background.state.getMasterPassword() == null || background.state.getUserName() == null) {
         $("#masterPasswordInput").modal('show');   
     }
 });
 
 function unlock() {
     var masterPassword = document.getElementById("masterPassword").value
+    var userName = document.getElementById("userName").value;
     chrome.runtime.getBackgroundPage(function(background) {
         background.state.setMasterPassword(masterPassword);
+        background.state.setUserName(userName);
     });
     window.close();
 }
@@ -25,6 +37,6 @@ document.getElementById("masterPassword").addEventListener("keydown", function(e
     }
 }, false);
 
-document.getElementById("inputMasterPassword").addEventListener("click",function() {
-    $('#masterPasswordInput').modal('show');
+$("#masterPasswordInput").on('shown.bs.modal', function() {
+    document.getElementById("userName").focus();
 });
