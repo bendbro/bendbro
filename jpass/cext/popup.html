@@ -27,26 +27,41 @@
 </div>
 <div class="container-fluid">
     <div class="row">
-        <div class="col-xs-12 h2 text-center">
+        <div class="col-xs-12 h3 text-center">
             Bencryptio
         </div>
     </div>
     <hr>
     <div class="row">
-        <div class="col-xs-1 h4 vcenter"><img src="resources/images/testicon.gif" width="20" height="20"></div>
-        <div class="col-xs-7 h4 vcenter" id="selectedUser">Nobody's here</div>
-        <div class="col-xs-2 h4 vcetner">
-            <button class="btn btn-default btn-xs" data-toggle="modal" href="#masterPasswordInput">Sign in</button>
+        <div class="col-xs-8 vcenter">
+            <p id="selectedUser" class="text-right txtcenter" style="font-size:18px">Nobody's here</p>
+        </div>
+        <div class="col-xs-2 vcenter">
+            <button class="btn btn-lite" data-toggle="modal" href="#masterPasswordInput">
+                <img width=20 height=20 src="resources/images/account.svg"></img>
+            </button>
         </div>
     </div>
-    <br>
-    <br>
-    <div class="row">
-        <div class="col-xs-4 vcenter text-center">save</div>
-        <div class="col-xs-4 vcenter text-center">edit</div>
-        <div class="col-xs-4 vcetner text-center">about</div>
-    </div>
 </div>
+<div class="container-fluid footer">
+    <div class="row">
+        <div class="col-xs-4">
+            <button class="btn btn-lite">
+                <img width=20 height=24 src="resources/images/archive.svg"></img>
+            </button>
+        </div>
+        <div class="col-xs-4">
+            <button class="btn btn-lite">
+                <img width=20 height=20 src="resources/images/view-list.svg"></img>
+            </button>
+        </div>
+        <div class="col-xs-4">
+            <button class="btn btn-lite">
+                <img width=20 height=20 src="resources/images/help.svg"></img>
+            </button>    
+        </div>
+    </div>
+</div> 
 </body>
 </html>
 <style>
@@ -55,11 +70,33 @@ body {
     height:250px;
 }
 
+.btn-lite {
+    padding:0;
+    border:none;
+    background:none;
+}
+
+.txtcenter {
+    display: inline-block;
+    vertical-align: middle;
+    height: 100%;
+    line-height: 33px;
+    float: none;
+}
+
 .vcenter {
     display: inline-block;
     vertical-align: middle;
     float: none;
+    height:100%;
 }
+
+.footer {
+    min-width:100%;
+    position:absolute;
+    bottom:20px;
+}
+
 </style>
 <link rel="stylesheet" href="resources/bootstrap.min.css">
 <link rel="stylesheet" href="resources/bootstrap-theme.min.css">
