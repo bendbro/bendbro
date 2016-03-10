@@ -136,32 +136,50 @@ var FormUserPassHandler = function(element) {
     var password = filterHighestRanked(nearby, new DOMFormFieldRanker(passwordKernel));
     var username = filterHighestRanked(nearby, new DOMFormFieldRanker(usernameKernel));
     
-    console.log(element);
-    console.log(password);
-    console.log(username);
-    
     if(username != null && password != null) {
+        var credentials = [];
+
+        function matchesExisting(username, password) {
+            for(var i = 0; i < credentials.length; i++) {
+                var credential = credentials[i];
+                if(credential.usernameValue == username && 
+                  (password == null || credential.passwordValue == password)) {
+                    return credential;
+                }
+            }
+            return null;
+        }
+
         var filledUsername = "";
         var filledPassword = "";
         username.node.style.backgroundColor = "#EE82EE";
         password.node.style.backgroundColor = "#EE82EE";
-        
+
         console.log('Requesting credentials!');
         chrome.runtime.sendMessage({
             reason:"request-credentials"
         }, function(response) {
-            console.log('Got a response');
-            console.log(response);
+            console.log('Got credentials');
+            console.log(response.credentials);
             if(response.credentials) {
-                filledUsername = response.credentials.usernameValue;
-                filledPassword = response.credentials.passwordValue;
-                username.node.value = filledUsername;
-                password.node.value = filledPassword;
+                credentials = credentials.concat(response.credentials); //TODO addAll instead of add
+
+                username.node.value = credentials[0].usernameValue;
+                password.node.value = credentials[0].passwordValue;
+
+                var datalist = document.createElement('datalist');
+                credentials.forEach(function(credential) {
+                    var option = document.createElement('option');
+                    option.setAttribute('value',credential.usernameValue);
+                    datalist.appendChild(option);    
+                });
+                username.node.appendChild(datalist);
             }
         });
         
         element.addEventListener("change", function(ev) {
-            if(username.node.value != filledUsername && password.node.value != filledUsername) {
+            var match = null;
+            if(matchesExisting(username.node.value, password.node.value) == null) {
                 chrome.runtime.sendMessage({
                     reason:"submit-credentials",
                     credentials: {
@@ -170,6 +188,9 @@ var FormUserPassHandler = function(element) {
                         passwordValue:password.node.value
                     }
                 });
+            } else if((match = matchesExisting(username.node.value, null)) != null) {
+                console.log('Setting password due to autocomplete set');
+                password.node.value = match.passwordValue;           
             }
         }, true);
     }

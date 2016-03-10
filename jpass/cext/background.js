@@ -2,6 +2,7 @@
 //TODO context menu right click (generate random)
 //TODO export credentials + scjl + node.app for archiving, decryption in desktop, or on website
 //TODO webpage access
+//TODO multiple credential dropdown bar on username (for setting related fields)
 
 var credentials = [];
 var lastRemoteLoad = 0;
@@ -124,24 +125,24 @@ function promptUser(message, onResponse) {
         }
         
         chrome.tabs.query({}, function(tabs) {
-        tabs.forEach(function(tab) {
-            onUpdateHandler(tab.id);
-        });            
-    });
+            tabs.forEach(function(tab) {
+                onUpdateHandler(tab.id);
+            });            
+        });
     
-    chrome.tabs.onUpdated.addListener(onUpdateHandler);
-}
+        chrome.tabs.onUpdated.addListener(onUpdateHandler);
+    }
 }
 
 function findCredentialForUrl(url, onFound) {
     function credentialSearch() {
-        var credentialFound = null;
+        var credentialsFound = [];
         credentials.forEach(function(credential) {
             if(extractRootDomain(extractDomain(credential.url)) == extractRootDomain(extractDomain(url))) {
-                credentialFound = credential;
+                credentialsFound.push(credential)
             }
         });
-        onFound(credentialFound);
+        onFound(credentialsFound);
     }
     
     if(new Date().getTime() - lastRemoteLoad > 1*60*60*1000) {
@@ -149,7 +150,7 @@ function findCredentialForUrl(url, onFound) {
             mergeRemoteCredentials(remote);
             credentialSearch();
         });
-        } else {
+    } else {
         credentialSearch();
     }
 }
@@ -216,12 +217,12 @@ chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
                 });
             }
         });
-        } else if(message.reason == "submit-credentials") {
+        return true;
+    } else if(message.reason == "submit-credentials") {
         var tabState = tabStateMap.get(sender.tab.id);
         message.credentials.url = sender.tab.url;
         tabState.latestCredentials = message.credentials;
     }
-    return true;
 });
 
 /*
